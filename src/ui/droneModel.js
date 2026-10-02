@@ -10,7 +10,7 @@ export const DRONE_KEYS = Object.freeze({
   left: ['a', 'arrowleft'],
   right: ['d', 'arrowright'],
   up: ['shift', ' ', 'e'],
-  down: ['control', 'q'],
+  down: ['q', 'c'],
 });
 
 /** Which intent a key maps to, or null. */

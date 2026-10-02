@@ -10,12 +10,13 @@ import {
   nextSpeedMultiplier,
 } from './droneModel.js';
 
-test('WASD, arrows, Shift/Ctrl/Q/E map to drone intents', () => {
+test('WASD, arrows, Shift/Q/C/E map to drone intents; Ctrl is never a drone key', () => {
   assert.equal(droneIntent('W'), 'forward');
   assert.equal(droneIntent('a'), 'left');
   assert.equal(droneIntent('ArrowRight'), 'right');
   assert.equal(droneIntent('Shift'), 'up');
-  assert.equal(droneIntent('Control'), 'down');
+  assert.equal(droneIntent('Control'), null);
+  assert.equal(droneIntent('c'), 'down');
   assert.equal(droneIntent('q'), 'down');
   assert.equal(droneIntent('x'), null);
 });

@@ -1157,6 +1157,8 @@ export const DICTIONARY_ES = Object.freeze({
   'FLY ···': 'VOLAR ···',
   'Fly a UHD drone camera: WASD to move, mouse to look, Shift up, Ctrl or Q down, wheel for speed, Esc to exit.':
     'Vuela una cámara de dron UHD: WASD para moverte, ratón para mirar, Shift subir, Ctrl o Q bajar, rueda para la velocidad, Esc para salir.',
+  'Fly a UHD drone camera: WASD to move, mouse to look, Shift up, Q or C down, wheel for speed, Esc to exit.':
+    'Vuela una cámara de dron UHD: WASD para moverte, ratón para mirar, Shift subir, Q o C bajar, rueda para la velocidad, Esc para salir.',
   'Fly below': 'Desciende por debajo de',
   'Fly in until the view fits the 1,000 km limit':
     'Acércate hasta que la vista quepa en el límite de 1,000 km',
@@ -2969,6 +2971,8 @@ export const DICTIONARY_ES = Object.freeze({
     'Dron UHD · vuela con WASD y el ratón',
   'UHD drone · WASD move · click + mouse look · Shift/E up · Ctrl/Q down · Esc exit':
     'Dron UHD · WASD mover · clic + ratón mirar · Shift/E subir · Ctrl/Q bajar · Esc salir',
+  'UHD drone · WASD move · click + mouse look · Shift/E up · Q/C down · Esc exit':
+    'Dron UHD · WASD mover · clic + ratón mirar · Shift/E subir · Q/C bajar · Esc salir',
   'UHD drone off': 'Dron UHD desactivado',
   'Ultra HD: deepest tile detail, full detail to the horizon and up to 2x pixel density. Needs a strong GPU and a fast connection.':
     'Ultra HD: máximo detalle de teselas hasta el horizonte y hasta 2x de densidad de píxeles. Requiere una GPU potente y buena conexión.',
@@ -3112,6 +3116,8 @@ export const DICTIONARY_ES = Object.freeze({
   'WASD move': 'WASD mover',
   'WASD move · mouse look (click to capture) · Shift/E up · Ctrl/Q down · wheel speed · Esc exit':
     'WASD mover · ratón mirar (clic para capturar) · Shift/E subir · Ctrl/Q bajar · rueda velocidad · Esc salir',
+  'WASD move · mouse look (click to capture) · Shift/E up · Q/C down · wheel speed · Esc exit':
+    'WASD mover · ratón mirar (clic para capturar) · Shift/E subir · Q/C bajar · rueda velocidad · Esc salir',
   'Watch a circle around the current map centre':
     'Vigilar un círculo alrededor del centro actual del mapa',
   'Watch zone name': 'Nombre de la zona de vigilancia',

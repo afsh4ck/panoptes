@@ -12,7 +12,7 @@ import {
  * @module droneMode
  * @description "UHD drone": a free-flight camera like a filming drone.
  * WASD / arrows move horizontally, the mouse looks around (click the view to
- * capture the pointer), Shift / Space / E climb, Ctrl / Q descend, the wheel
+ * capture the pointer), Shift / Space / E climb, Q / C descend, the wheel
  * changes speed and Esc exits. While active it requests UHD 3D tiles when
  * hovering (coarser while flying so the view keeps up), widens the lens and
  * shows a drone OSD. Nothing persists: exiting restores the previous camera
@@ -76,7 +76,7 @@ export function createDroneMode({
     <div class="pnp-drone-data">
       <div data-osd="alt"></div><div data-osd="speed"></div><div data-osd="heading"></div><div data-osd="position"></div>
     </div>
-    <div class="pnp-drone-help">WASD move · mouse look (click to capture) · Shift/E up · Ctrl/Q down · wheel speed · Esc exit</div>`;
+    <div class="pnp-drone-help">WASD move · mouse look (click to capture) · Shift/E up · Q/C down · wheel speed · Esc exit</div>`;
   document.body.appendChild(osd);
   const osdRows = Object.fromEntries(
     [...osd.querySelectorAll('[data-osd]')].map((n) => [n.dataset.osd, n]),
@@ -180,6 +180,9 @@ export function createDroneMode({
       return;
     }
     if (event.target?.matches?.('input, textarea, select')) return;
+    // A held Ctrl/Meta turns flight keys into browser shortcuts (Ctrl+W
+    // closes the tab); the drone ignores them so the key never moves it.
+    if (event.ctrlKey || event.metaKey) return;
     const intent = droneIntent(event.key);
     if (!intent) return;
     held.add(intent);
@@ -195,6 +198,10 @@ export function createDroneMode({
     event.stopImmediatePropagation();
   };
   const onBlur = () => held.clear();
+  const onBeforeUnload = (event) => {
+    event.preventDefault();
+    event.returnValue = '';
+  };
   const onCanvasClick = () => {
     if (active && document.pointerLockElement !== canvas)
       canvas.requestPointerLock?.();
@@ -268,6 +275,16 @@ export function createDroneMode({
       },
     });
     active = true;
+    // Last line of defence: an accidental Ctrl+W asks before leaving, and in
+    // fullscreen the keyboard lock keeps W/Q inside the page.
+    view.addEventListener('beforeunload', onBeforeUnload);
+    try {
+      navigator.keyboard
+        ?.lock?.(['KeyW', 'KeyQ', 'KeyA', 'KeyS', 'KeyD'])
+        ?.catch?.(() => {});
+    } catch {
+      /* not in fullscreen or unsupported */
+    }
     document.body.classList.add('drone-mode');
     osd.hidden = false;
     held.clear();
@@ -279,6 +296,12 @@ export function createDroneMode({
   function exit() {
     if (!active) return;
     active = false;
+    view.removeEventListener('beforeunload', onBeforeUnload);
+    try {
+      navigator.keyboard?.unlock?.();
+    } catch {
+      /* nothing locked */
+    }
     view.cancelAnimationFrame(frame);
     held.clear();
     if (document.pointerLockElement === canvas) document.exitPointerLock?.();

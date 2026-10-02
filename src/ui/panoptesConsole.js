@@ -1194,7 +1194,7 @@ export function createPanoptesConsole({
           }
           toast(
             on
-              ? 'UHD drone · WASD move · click + mouse look · Shift/E up · Ctrl/Q down · Esc exit'
+              ? 'UHD drone · WASD move · click + mouse look · Shift/E up · Q/C down · Esc exit'
               : 'UHD drone off',
           );
         },
