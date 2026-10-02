@@ -1,0 +1,19 @@
+  <!-- Command palette (Ctrl/Cmd+K): layers, places, sites, actions, coordinates. -->
+  <div id="command-palette" class="command-palette" hidden>
+    <div class="command-palette-backdrop" data-command-palette-close></div>
+    <div class="command-palette-dialog" role="dialog" aria-modal="true" aria-labelledby="command-palette-label">
+      <div class="command-palette-input-row">
+        <span id="command-palette-label" class="command-palette-prompt" aria-label="Command">›</span>
+        <input id="command-palette-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="command-palette-results" placeholder="Search layers, places, sites, actions… (Ctrl+K)" />
+        <kbd class="command-palette-kbd" aria-hidden="true">ESC</kbd>
+      </div>
+      <div id="command-palette-results" class="command-palette-results" role="listbox" aria-label="Command results"></div>
+      <p class="command-palette-empty" data-command-palette-empty hidden>No matches. Try a layer name, a city, a base, or coordinates like <code>40.42, -3.70</code>.</p>
+      <p class="command-palette-status" data-command-palette-status role="status" aria-live="polite"></p>
+      <footer class="command-palette-footer" aria-hidden="true">
+        <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+        <span><kbd>Tab</kbd> next group</span>
+        <span><kbd>Enter</kbd> <span data-command-palette-enter-hint>select</span></span>
+      </footer>
+    </div>
+  </div>

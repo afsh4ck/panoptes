@@ -1,0 +1,13 @@
+{
+  "generatedAt": "2026-09-30T18:49:32.979Z",
+  "dataset": "sanctioned_vessels",
+  "file": "sanctioned_vessels.json",
+  "source": "OpenSanctions sanctions dataset",
+  "url": "https://data.opensanctions.org/datasets/latest/sanctions/targets.simple.csv",
+  "license": "CC BY-NC 4.0",
+  "count": 1998,
+  "withImo": 1976,
+  "withMmsi": 827,
+  "bytes": 990899,
+  "sha256": "782363a28360c9a0e5d8e83a68c44c19abce023607b1a0f5032263037e3c1ec8"
+}

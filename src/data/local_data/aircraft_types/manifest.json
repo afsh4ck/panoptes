@@ -1,0 +1,19 @@
+{
+  "generatedAt": "2026-10-01T05:11:40.185Z",
+  "dataset": "aircraft_types",
+  "file": "aircraft_types.json",
+  "sources": [
+    {
+      "name": "ICAO Doc 8643 via OpenSky Network",
+      "url": "https://s3.opensky-network.org/data-samples/metadata/doc8643AircraftTypes.csv"
+    },
+    {
+      "name": "Manufacturer published specifications (hand-checked table in scripts/etl/aircraft-types.mjs)"
+    }
+  ],
+  "faaNote": "FAA Aircraft Characteristics Database not machine-downloadable at build time (HTTP 403 to scripted clients)",
+  "count": 2642,
+  "dimensioned": 61,
+  "bytes": 621616,
+  "sha256": "98e8f8ab2ae1f18a2d117d0fbee3cd1139db7c68794c9a1ecf52a503522f7b63"
+}

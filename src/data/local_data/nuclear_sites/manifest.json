@@ -1,0 +1,54 @@
+{
+  "generatedAt": "2026-10-01T05:31:40.613Z",
+  "dataset": "nuclear_sites",
+  "file": "nuclear_sites.geojsonl",
+  "sources": [
+    {
+      "name": "Wikidata",
+      "license": "CC0 1.0",
+      "classes": [
+        [
+          "Q134447",
+          "power_plant"
+        ],
+        [
+          "Q1438105",
+          "research_reactor"
+        ],
+        [
+          "Q54360657",
+          "enrichment"
+        ],
+        [
+          "Q853409",
+          "missile_silo"
+        ],
+        [
+          "Q53732481",
+          "test_site"
+        ]
+      ]
+    },
+    {
+      "name": "OpenStreetMap via Overpass",
+      "license": "ODbL 1.0",
+      "query": "[out:json][timeout:300];(nwr[\"plant:source\"=\"nuclear\"];nwr[\"generator:source\"=\"nuclear\"];nwr[\"military\"=\"nuclear_explosion_site\"];);out center tags;"
+    },
+    {
+      "name": "WRI Global Power Plant Database v1.3 (nuclear rows)",
+      "license": "CC BY 4.0"
+    }
+  ],
+  "merge": "OSM → Wikidata within 3 km, WRI → within 5 km (similar or missing names)",
+  "count": 1153,
+  "invalid": 0,
+  "bytes": 454365,
+  "sha256": "965e1f0fd853e83f3410b0bec654868b83e0b049b2c9fd375c8e9b62e723268b",
+  "classes": {
+    "power_plant": 806,
+    "research_reactor": 87,
+    "enrichment": 5,
+    "missile_silo": 21,
+    "test_site": 234
+  }
+}

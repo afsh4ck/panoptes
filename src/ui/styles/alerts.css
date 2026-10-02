@@ -1,0 +1,367 @@
+/* ── Alerts rail panel ──────────────────────────────────────────────────
+   Watch zones, rule mutes and the alert log. Mirrors the weather panel
+   chrome so the right rail reads as one system; only the severity colors
+   are its own. `--accent-rgb` is optional: the fallback keeps the panel
+   themed under the stock token set. */
+#alerts-panel {
+  --alerts-accent-rgb: var(--accent-rgb, 0, 212, 255);
+  --alerts-warn: #f5a524;
+  --alerts-critical: #ff4d4f;
+  width: 100%;
+  max-width: 100%;
+  min-height: 0;
+}
+#right-context-rail > #alerts-panel {
+  position: relative;
+  inset: auto;
+  flex: 0 0 auto;
+  pointer-events: auto;
+}
+.alerts-panel-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  max-height: 100%;
+  box-sizing: border-box;
+  padding: 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--panel-radius);
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+#alerts-panel .panel-glow {
+  position: absolute;
+  inset: -18px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(var(--alerts-accent-rgb), 0.16) 0%,
+    transparent 65%
+  );
+  filter: blur(16px);
+  opacity: 0.25;
+  pointer-events: none;
+}
+#alerts-panel.alerts-has-critical .panel-glow {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 77, 79, 0.28) 0%,
+    transparent 65%
+  );
+  opacity: 0.45;
+}
+#alerts-panel .panel-header {
+  flex: 0 0 auto;
+}
+#alerts-panel-count {
+  min-width: 18px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  font: 9px var(--font-mono);
+  text-align: center;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+#alerts-panel-count.has-unread {
+  color: var(--bg-dark);
+  background: var(--accent);
+  border-color: transparent;
+}
+#alerts-panel-count.is-critical {
+  background: var(--alerts-critical);
+  color: #fff;
+  animation: alerts-pulse 1.6s ease-in-out infinite;
+}
+@keyframes alerts-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(255, 77, 79, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #alerts-panel-count.is-critical {
+    animation: none;
+  }
+}
+#alerts-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  max-height: calc(var(--right-stack-max-height, 50svh) - 64px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--alerts-accent-rgb), 0.46) transparent;
+}
+#alerts-panel.collapsed #alerts-panel-body,
+#alerts-panel[hidden] {
+  display: none !important;
+}
+#alerts-panel.collapsed .panel-title {
+  font-size: 8px;
+  letter-spacing: 1.8px;
+}
+#alerts-panel.collapsed .panel-header {
+  margin-bottom: 2px;
+}
+#alerts-panel.collapsed .alerts-panel-inner {
+  padding-bottom: 10px;
+}
+
+/* ── Toolbar ── */
+.alerts-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.alerts-toolbar .scene-btn {
+  flex: 0 0 auto;
+}
+.alerts-notify-btn.active {
+  border-color: rgba(var(--alerts-accent-rgb), 0.6);
+  color: var(--accent);
+}
+.alerts-status {
+  flex: 1 1 100%;
+  color: var(--text-dim);
+  font: 9px var(--font-mono);
+  letter-spacing: 0.6px;
+  min-height: 11px;
+}
+
+/* ── Blocks ── */
+.alerts-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.alerts-block-title {
+  margin: 0;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+}
+
+/* ── Zones ── */
+.alerts-zone-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.alerts-zone-empty {
+  color: var(--text-dim);
+  font-size: 10px;
+}
+.alerts-zone {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.alerts-zone.is-off {
+  opacity: 0.55;
+}
+.alerts-zone-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  padding: 2px 4px;
+  border: 0;
+  border-left: 2px solid rgba(var(--alerts-accent-rgb), 0.9);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.alerts-zone.is-off .alerts-zone-toggle {
+  border-left-color: rgba(255, 255, 255, 0.2);
+}
+.alerts-zone-name {
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.alerts-zone-caption {
+  color: var(--text-dim);
+  font: 9px var(--font-mono);
+  letter-spacing: 0.4px;
+}
+.alerts-zone-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px;
+}
+.alerts-zone-form .alerts-zone-add {
+  grid-column: 1 / -1;
+}
+.alerts-input,
+.alerts-select {
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--btn-radius);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+  font: 11px var(--font-sans);
+}
+.alerts-input:focus,
+.alerts-select:focus {
+  border-color: rgba(var(--alerts-accent-rgb), 0.6);
+  outline: none;
+}
+.alerts-select {
+  color-scheme: dark;
+}
+
+/* ── Rules ── */
+.alerts-rule-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.alerts-rule-chip.is-muted {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+.alerts-rule-chip[data-severity='critical'].active {
+  border-color: rgba(255, 77, 79, 0.5);
+}
+.alerts-rule-chip[data-severity='warn'].active {
+  border-color: rgba(245, 165, 36, 0.5);
+}
+
+/* ── Log ── */
+.alerts-log-block {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.alerts-empty {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 10px;
+  line-height: 1.4;
+}
+.alerts-item {
+  display: grid;
+  grid-template-columns: 3px 1fr auto;
+  gap: 8px;
+  align-items: start;
+  padding: 6px 6px 6px 4px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  transition: background var(--transition-fast);
+}
+.alerts-item.is-unread {
+  background: rgba(var(--alerts-accent-rgb), 0.07);
+}
+.alerts-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.alerts-item-bar {
+  align-self: stretch;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.alerts-item[data-severity='warn'] .alerts-item-bar {
+  background: var(--alerts-warn);
+}
+.alerts-item[data-severity='critical'] .alerts-item-bar {
+  background: var(--alerts-critical);
+}
+.alerts-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.alerts-item-title {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.alerts-item-detail {
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.alerts-item-meta {
+  color: var(--text-dim);
+  font: 9px var(--font-mono);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.alerts-item[data-severity='critical'] .alerts-item-meta {
+  color: var(--alerts-critical);
+}
+.alerts-item[data-severity='warn'] .alerts-item-meta {
+  color: var(--alerts-warn);
+}
+.alerts-item-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.alerts-mini-btn {
+  padding: 3px 6px;
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  font: 9px var(--font-mono);
+  letter-spacing: 0.8px;
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+.alerts-mini-btn:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--glass-border-hover);
+}
+.alerts-mini-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.alerts-mini-danger:hover:not(:disabled) {
+  color: var(--alerts-critical);
+  border-color: rgba(255, 77, 79, 0.5);
+}

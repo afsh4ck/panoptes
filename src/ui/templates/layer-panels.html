@@ -1,0 +1,153 @@
+  <div id="left-panel-stack">
+  <!-- Data Layer Toggle Panel -->
+  <div id="data-panel" class="panel-collapsible collapsed active" data-panel-id="data-panel">
+    <div class="panel-glow"></div>
+    <div class="data-panel-inner">
+      <div class="panel-header">
+        <span class="panel-title">DATA LAYERS</span>
+        <span class="panel-divider"></span>
+        <button class="panel-collapse-btn" data-collapse-target="data-panel" title="Collapse panel">+</button>
+      </div>
+      <div id="data-toggles" class="data-toggle-list"></div>
+    </div>
+  </div>
+
+  <!-- CCTV Coverage Panel -->
+  <div id="cctv-panel" class="panel-collapsible collapsed" data-panel-id="cctv-panel">
+    <div class="panel-glow"></div>
+    <div class="cctv-panel-inner" data-rail-scroller>
+      <div class="panel-header">
+        <span class="panel-title">CCTV</span>
+        <span class="panel-divider"></span>
+        <button class="panel-collapse-btn" data-collapse-target="cctv-panel" title="Collapse panel">+</button>
+      </div>
+      <div class="cyber-panel-body" data-rail-scroller>
+      <!-- Simple first: live feed, which camera, on/off and the two main
+           actions. Everything technical lives in the closed sections below. -->
+      <button id="cctv-enable-btn" class="scene-btn cctv-power" type="button">CCTV OFF</button>
+      <div class="cctv-catalog-bar" data-cctv-catalog>
+        <div class="cctv-catalog-count"><strong data-cctv-count>0</strong> <span>cameras</span><span class="cctv-catalog-sep">·</span><strong data-cctv-live-count>0</strong> <span>live video</span></div>
+        <div class="cctv-filter-seg" role="radiogroup" aria-label="Camera filter">
+          <button type="button" class="cctv-filter-btn active" data-cctv-filter="all" role="radio" aria-checked="true">All</button>
+          <button type="button" class="cctv-filter-btn" data-cctv-filter="live" role="radio" aria-checked="false">Live video</button>
+        </div>
+        <input type="search" class="cctv-camera-search" data-cctv-search placeholder="Filter by city or street…" aria-label="Filter cameras by city or street" autocomplete="off" spellcheck="false" />
+      </div>
+      <div id="cctv-frame-wrap" class="cctv-frame-wrap">
+        <img id="cctv-frame" alt="CCTV feed frame" />
+        <canvas id="cctv-video" class="cctv-frame" hidden></canvas>
+      </div>
+      <div class="cctv-nav-row">
+        <button id="cctv-prev-btn" class="scene-btn cctv-step" type="button" title="Previous camera" aria-label="Previous camera">‹</button>
+        <select id="cctv-camera-select" aria-label="CCTV camera"></select>
+        <button id="cctv-next-btn" class="scene-btn cctv-step" type="button" title="Next camera" aria-label="Next camera">›</button>
+      </div>
+      <div class="cctv-action-row">
+        <button id="cctv-nearest-btn" class="scene-btn" type="button" title="Jump to the camera closest to the view">NEAREST</button>
+        <button id="cctv-focus-btn" class="scene-btn" type="button" title="Fly the map to this camera">FOCUS</button>
+      </div>
+      <div class="cctv-status-row">
+        <div id="cctv-source-badge" role="status" aria-live="polite">SOURCE · UNKNOWN</div>
+      </div>
+      <div id="cctv-meta">Enable CCTV to load camera intersections</div>
+      <details class="cctv-section">
+        <summary>Map overlays</summary>
+        <div class="cctv-controls cctv-toggle-grid">
+          <button id="cctv-projection-btn" class="scene-btn" type="button" title="Project the camera image onto the 3D city">PROJECTION ON</button>
+          <button id="cctv-coverage-btn" class="scene-btn" type="button" title="Show what each camera can see: off, wireframes, viewshed">COVERAGE OFF</button>
+          <button id="cctv-auto-hop-btn" class="scene-btn" type="button" title="Cycle through cameras automatically">AUTO HOP OFF</button>
+        </div>
+      </details>
+      <details class="cctv-section">
+        <summary>Calibration <span id="cctv-quality-chip">CAL · --</span></summary>
+        <div class="cctv-calibration-block">
+          <div class="cctv-calibration-header">
+            <div class="cctv-summary-label">Camera pose</div>
+            <button id="cctv-adjust-btn" class="scene-btn" title="Drag the camera in the world: rings rotate, arrows move, handles set range/FOV">ADJUST</button>
+          </div>
+          <div id="cctv-cal-readout" class="cctv-cal-readout" aria-label="Camera pose — click a value to type">
+            <button class="cctv-cal-value" data-cal-field="heading" title="Heading (compass °) — click to type">HDG --</button>
+            <button class="cctv-cal-value" data-cal-field="pitch" title="Pitch (° up/down) — click to type">PITCH --</button>
+            <button class="cctv-cal-value" data-cal-field="fov" title="Horizontal FOV (°) — click to type">FOV --</button>
+            <button class="cctv-cal-value" data-cal-field="range" title="Range / monitor-plane distance (m) — click to type">RANGE --</button>
+            <button class="cctv-cal-value" data-cal-field="height" title="Mount height above ground (m) — click to type">HGT --</button>
+            <button class="cctv-cal-value" data-cal-field="north" title="North offset from catalog position (m) — click to type">ΔN --</button>
+            <button class="cctv-cal-value" data-cal-field="east" title="East offset from catalog position (m) — click to type">ΔE --</button>
+          </div>
+          <div class="cctv-controls cctv-calibration-actions">
+            <button id="cctv-calib-save-btn" class="scene-btn">SAVE CAL</button>
+            <button id="cctv-calib-reset-btn" class="scene-btn">RESET CAL</button>
+          </div>
+        </div>
+      </details>
+      <details class="cctv-section">
+        <summary>Scene summary</summary>
+        <div id="cctv-summary">Enable CCTV to start camera-linked intelligence summaries.</div>
+      </details>
+      </div>
+    </div>
+  </div>
+
+  <!-- Draw panel: lines, zones and pins on the map -->
+  <div id="draw-panel" class="panel-collapsible collapsed" data-panel-id="draw-panel">
+    <div class="draw-panel-inner" data-rail-scroller>
+      <div class="panel-header">
+        <span class="panel-title">DRAW</span>
+        <span class="panel-divider"></span>
+        <button class="panel-collapse-btn" data-collapse-target="draw-panel" title="Collapse panel">+</button>
+      </div>
+      <p class="draw-panel-help">Switch drawing on, pick Line, Area or Pin, then click the map to place points. Double-click or Enter finishes the shape, Esc cancels.</p>
+      <div class="pp-panel-body draw-panel-body" data-draw-slot></div>
+    </div>
+  </div>
+
+  <!-- Route panel: A to B on foot, by car or by air, played live -->
+  <div id="route-panel" class="panel-collapsible collapsed" data-panel-id="route-panel">
+    <div class="route-panel-inner" data-rail-scroller>
+      <div class="panel-header">
+        <span class="panel-title">ROUTE</span>
+        <span class="panel-divider"></span>
+        <button class="panel-collapse-btn" data-collapse-target="route-panel" title="Collapse panel">+</button>
+      </div>
+      <div class="route-body" data-route-root></div>
+    </div>
+  </div>
+
+  <!-- Scene Director Panel -->
+  <div id="scene-panel" class="panel-collapsible collapsed" data-panel-id="scene-panel">
+    <div class="panel-glow"></div>
+    <div class="scene-panel-inner">
+      <div class="panel-header">
+        <span class="panel-title">SCENES</span>
+        <span class="panel-divider"></span>
+        <button class="panel-collapse-btn" data-collapse-target="scene-panel" title="Collapse panel">+</button>
+      </div>
+      <div class="scene-controls">
+        <select id="scene-select" aria-label="Scene recipe"></select>
+        <button id="scene-new-btn" class="scene-btn">NEW</button>
+        <button id="scene-delete-btn" class="scene-btn scene-btn-danger">DEL</button>
+      </div>
+      <div class="scene-controls">
+        <button id="scene-capture-btn" class="scene-btn">CAPTURE SHOT</button>
+        <button id="scene-update-shot-btn" class="scene-btn">UPDATE SHOT</button>
+      </div>
+      <div id="scene-shot-list" class="scene-shot-list"></div>
+      <div class="scene-controls">
+        <button id="scene-start-btn" class="scene-btn">START</button>
+        <button id="scene-stop-btn" class="scene-btn scene-btn-danger">STOP</button>
+        <button id="scene-next-btn" class="scene-btn">NEXT</button>
+      </div>
+      <div class="scene-controls">
+        <button id="scene-export-btn" class="scene-btn">EXPORT PRESETS</button>
+        <button id="scene-import-btn" class="scene-btn">IMPORT</button>
+        <button id="scene-download-btn" class="scene-btn">RUN LOG</button>
+        <input type="file" id="scene-import-file" accept="application/json,.json" hidden />
+      </div>
+      <div class="scene-progress">
+        <div id="scene-progress-fill">0%</div>
+      </div>
+      <div id="scene-status">Ready</div>
+    </div>
+  </div>
+
+  </div>

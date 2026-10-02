@@ -1,0 +1,39 @@
+{
+  "generatedAt": "2026-10-01T05:32:19.192Z",
+  "dataset": "military_bases",
+  "file": "military_bases.geojsonl",
+  "sources": [
+    {
+      "name": "OpenStreetMap via Overpass",
+      "license": "ODbL 1.0",
+      "queries": [
+        "[out:json][timeout:600];(nwr[\"military\"=\"naval_base\"];nwr[\"military\"=\"airfield\"];nwr[\"military\"=\"base\"];);out center tags;",
+        "[out:json][timeout:600];nwr[\"military\"=\"barracks\"];out center tags;"
+      ]
+    },
+    {
+      "name": "Wikidata",
+      "license": "CC0 1.0",
+      "query": "SELECT ?item ?itemLabel ?coord ?countryLabel ?operatorLabel ?classLabel ?inception WHERE {\n  ?item wdt:P31/wdt:P279* wd:Q245016; wdt:P625 ?coord .\n  OPTIONAL { ?item wdt:P17 ?country }\n  OPTIONAL { ?item wdt:P137 ?operator }\n  OPTIONAL { ?item wdt:P31 ?class }\n  OPTIONAL { ?item wdt:P571 ?inception }\n  SERVICE wikibase:label { bd:serviceParam wikibase:language \"en,[AUTO_LANGUAGE]\". }\n} ORDER BY ?item"
+    }
+  ],
+  "merge": "Wikidata → OSM within 2.5 km (similar or missing names); named military land → within 2 km",
+  "count": 20619,
+  "invalid": 0,
+  "bytes": 7473015,
+  "sha256": "21816b046f31aa096a566b51e32db037cd27345114328a9b635926eb1ce77619",
+  "classes": {
+    "air_base": 4913,
+    "base": 5404,
+    "naval_base": 855,
+    "barracks": 9185,
+    "radar_station": 51,
+    "missile_base": 18,
+    "training_area": 31,
+    "army_base": 137,
+    "other": 25
+  },
+  "osmElements": 23926,
+  "osmLandElements": 0,
+  "wikidataRows": 17848
+}

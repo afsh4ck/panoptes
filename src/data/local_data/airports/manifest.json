@@ -1,0 +1,17 @@
+{
+  "generatedAt": "2026-09-30T18:49:27.759Z",
+  "dataset": "airports",
+  "file": "airports.geojsonl",
+  "source": "OurAirports airports.csv",
+  "url": "https://davidmegginson.github.io/ourairports-data/airports.csv",
+  "license": "Public domain (OurAirports)",
+  "filter": "type in {large_airport, medium_airport} OR name matches military pattern (not closed)",
+  "count": 5970,
+  "bytes": 3046977,
+  "sha256": "d01dbcec6be695df5dc7f4e7519bf3f00d8e21ee7c5dde1b37e223c476b0c47f",
+  "classes": {
+    "military_airfield": 1335,
+    "medium_airport": 3477,
+    "large_airport": 1158
+  }
+}

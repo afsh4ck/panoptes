@@ -1,0 +1,18 @@
+{
+  "generatedAt": "2026-09-30T18:49:26.807Z",
+  "dataset": "ports",
+  "file": "ports.geojsonl",
+  "source": "NGA World Port Index (Pub. 150)",
+  "url": "https://msi.nga.mil/api/publications/download?key=16920959/SFH00000/UpdatedPub150.csv&type=view",
+  "license": "Public domain (U.S. Government work)",
+  "count": 3805,
+  "bytes": 2023221,
+  "sha256": "42345676b5ac98e4b95a9c14bd282d348f9fe591981db861a96c059e9d3400bd",
+  "classes": {
+    "port_very_small": 2109,
+    "port_small": 1021,
+    "port_medium": 375,
+    "port_large": 174,
+    "port_unknown": 126
+  }
+}

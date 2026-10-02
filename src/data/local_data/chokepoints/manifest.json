@@ -1,0 +1,13 @@
+{
+  "generatedAt": "2026-10-01T05:32:19.453Z",
+  "dataset": "chokepoints",
+  "file": "chokepoints.geojsonl",
+  "source": "hand-authored (PALANTIR maintainers)",
+  "license": "MIT (part of this repository)",
+  "count": 29,
+  "bytes": 12330,
+  "sha256": "57f182fdea4cf595dac5317d8b92d6631fdf7989e9e7d3935543aa6856f61c5e",
+  "classes": {
+    "chokepoint": 29
+  }
+}

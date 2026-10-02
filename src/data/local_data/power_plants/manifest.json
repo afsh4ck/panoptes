@@ -1,0 +1,26 @@
+{
+  "generatedAt": "2026-09-30T18:49:29.669Z",
+  "dataset": "power_plants",
+  "file": "power_plants.geojsonl",
+  "source": "WRI Global Power Plant Database v1.3",
+  "url": "https://wri-dataportal-prod.s3.amazonaws.com/manual/global_power_plant_database_v_1_3.zip",
+  "license": "CC BY 4.0",
+  "filter": "capacity_mw >= 100",
+  "count": 7832,
+  "bytes": 3142622,
+  "sha256": "37560572ee8d6522f72cb8e8b536cec99c3c7a027b1778e019881dc0b3b8ef3b",
+  "classes": {
+    "hydro": 1746,
+    "gas": 2301,
+    "solar": 348,
+    "other": 16,
+    "nuclear": 193,
+    "coal": 2014,
+    "wind": 714,
+    "biomass": 65,
+    "oil": 389,
+    "geothermal": 37,
+    "storage": 1,
+    "waste": 8
+  }
+}

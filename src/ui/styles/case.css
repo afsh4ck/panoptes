@@ -1,0 +1,230 @@
+/* ── Case notes panel (right rail) ─────────────────────────────── */
+#right-context-rail > #case-panel {
+  position: relative;
+  inset: auto;
+  flex: 0 0 auto;
+  width: 100%;
+  pointer-events: auto;
+}
+
+.case-panel-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  max-height: 100%;
+  box-sizing: border-box;
+  padding: 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--panel-radius);
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+
+#case-panel .panel-glow {
+  position: absolute;
+  inset: -18px;
+  background: radial-gradient(
+    ellipse at center,
+    var(--accent-dim) 0%,
+    transparent 65%
+  );
+  filter: blur(16px);
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+#case-panel .panel-header {
+  flex: 0 0 auto;
+}
+
+#case-panel-count {
+  color: var(--text-secondary);
+  font: 9px var(--font-mono);
+}
+
+#case-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  max-height: calc(var(--right-stack-max-height, 50svh) - 64px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-glow) transparent;
+  color: var(--text-dim);
+  font: 9px/1.45 var(--font-mono);
+  letter-spacing: 0.5px;
+}
+
+#case-panel.collapsed #case-panel-body,
+#case-panel[hidden] {
+  display: none !important;
+}
+
+#case-panel.collapsed .panel-title {
+  font-size: 8px;
+  letter-spacing: 1.8px;
+}
+
+#case-panel.collapsed .panel-header {
+  margin-bottom: 2px;
+}
+
+#case-panel.collapsed .case-panel-inner {
+  padding-bottom: 10px;
+}
+
+.case-name-row,
+.case-actions,
+.case-note-actions,
+.case-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.case-name-input,
+.case-note-input,
+.case-tag-input {
+  flex: 1 1 120px;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--glass-border-hover);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+  font: 400 11px/1.4 var(--font-sans);
+}
+
+.case-name-input {
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.case-note-input {
+  width: 100%;
+  min-height: 52px;
+  resize: vertical;
+  font-family: var(--font-sans);
+}
+
+.case-name-input:focus,
+.case-note-input:focus,
+.case-tag-input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.case-section-label {
+  margin: 2px 0 0;
+  color: var(--text-dim);
+  font: 600 8px/1.2 var(--font-mono);
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+}
+
+.case-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 8px;
+  border: 1px solid var(--glass-border-hover);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  font: 500 9px/1.4 var(--font-mono);
+  letter-spacing: 0.6px;
+}
+
+.case-tag-chip button {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-dim);
+  font: 600 10px/1 var(--font-mono);
+  cursor: pointer;
+}
+
+.case-tag-chip button:hover {
+  color: #ff7272;
+}
+
+.case-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.case-note {
+  padding: 8px 9px;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.case-note-text {
+  margin: 0 0 6px;
+  color: var(--text-primary);
+  font: 400 11px/1.45 var(--font-sans);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.case-note-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-bottom: 6px;
+  color: var(--text-dim);
+}
+
+.case-note-pin {
+  color: var(--accent);
+}
+
+.case-note-actions .scene-btn,
+.case-actions .scene-btn {
+  padding: 5px 8px;
+  font-size: 8px;
+}
+
+.case-empty {
+  margin: 0;
+  color: var(--text-secondary);
+  font: 400 10px/1.5 var(--font-sans);
+}
+
+.layer-export-menu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0 10px 6px;
+}
+
+.layer-export-label {
+  margin-right: 2px;
+  color: var(--text-dim);
+  font: 600 8px/1 var(--font-mono);
+  letter-spacing: 1.6px;
+}
+
+.layer-export-btn {
+  padding: 4px 7px;
+  font-size: 8px;
+}

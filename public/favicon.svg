@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="PANOPTES">
+  <rect width="64" height="64" rx="12" fill="#0b0d10" />
+  <g fill="#f5a524">
+    <circle cx="32" cy="9" r="2.6" />
+    <circle cx="48.3" cy="15.7" r="2.6" />
+    <circle cx="55" cy="32" r="2.6" />
+    <circle cx="48.3" cy="48.3" r="2.6" />
+    <circle cx="32" cy="55" r="2.6" />
+    <circle cx="15.7" cy="48.3" r="2.6" />
+    <circle cx="9" cy="32" r="2.6" />
+    <circle cx="15.7" cy="15.7" r="2.6" />
+  </g>
+  <path d="M16 32 Q32 19 48 32 Q32 45 16 32 Z" fill="none" stroke="#f5a524" stroke-width="2.6" stroke-linejoin="round" />
+  <circle cx="32" cy="32" r="7" fill="#f5a524" />
+  <circle cx="32" cy="32" r="2.6" fill="#0b0d10" />
+</svg>

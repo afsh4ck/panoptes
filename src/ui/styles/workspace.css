@@ -1,0 +1,1362 @@
+/* ═══════════════════════════════════════════════════════════════════
+   PANOPTES — workstation layout (src/ui/workspaceShell.js)
+
+   Regions, all keyed on html[data-workspace='workstation'] and released in
+   Cockpit mode, which keeps its own full-screen composition:
+
+     ┌──────────────────── top bar (brand · search · actions · UTC) ───┐
+     │rail│ drawer │            globe viewport            │ inspector │
+     │    │ (one   │                                      │ tabs      │
+     │    │ tool)  │                                      │ (one tab) │
+     └──────────── status bar (dock · feed summary) ───────────────────┘
+
+   Existing panels keep their ids and disclosure buttons; this sheet only
+   docks the open one of each region and hides the collapsed ones. The legacy
+   rail engines stand down in this mode (src/ui/workspaceMode.js), so the
+   few !important rules below override inline styles they wrote before.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  --ws-top: 48px;
+  --ws-rail: 60px;
+  --ws-drawer: 344px;
+  --ws-inspector: 380px;
+  --ws-tabs: 44px;
+  --ws-bottom: 34px;
+  --ws-surface: #101317;
+  --ws-surface-2: #161a20;
+  --ws-line: rgba(255, 255, 255, 0.08);
+  --ws-line-strong: rgba(255, 255, 255, 0.14);
+}
+
+:root[data-theme='light'] {
+  --ws-surface: #ffffff;
+  --ws-surface-2: #f2f3f5;
+  --ws-line: rgba(15, 20, 30, 0.1);
+  --ws-line-strong: rgba(15, 20, 30, 0.18);
+}
+
+/* Chrome is hidden until the workstation mounts, and in Cockpit mode. */
+.ws-topbar,
+.ws-nav,
+.ws-statusbar {
+  display: none;
+}
+
+:root[data-workspace='workstation'] body:not(.cockpit-mode) .ws-topbar,
+:root[data-workspace='workstation'] body:not(.cockpit-mode) .ws-statusbar {
+  display: flex;
+}
+
+:root[data-workspace='workstation'] body:not(.cockpit-mode) .ws-nav {
+  display: contents;
+}
+
+/* ── Shared surface language: solid, crisp, no glow ──────────────── */
+:root[data-workspace='workstation'] body:not(.cockpit-mode) .panel-glow,
+:root[data-workspace='workstation'] body:not(.cockpit-mode) .title-glow,
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  .first-run-scanline {
+  display: none !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  :is(
+    #data-panel,
+    #pp-toggles,
+    #scene-panel,
+    #cctv-panel,
+    #draw-panel,
+    #route-panel,
+    #intel-panel,
+    #alerts-panel,
+    #case-panel,
+    #global-context-panel,
+    #weather-panel,
+    #recent-imagery-panel
+  ) {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  background: var(--ws-surface) !important;
+}
+
+/* ── Top bar ─────────────────────────────────────────────────────── */
+.ws-topbar {
+  position: fixed;
+  z-index: 300;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: var(--ws-top);
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px 0 236px;
+  background: var(--ws-surface);
+  border-bottom: 1px solid var(--ws-line-strong);
+  pointer-events: auto;
+}
+
+.ws-topbar-brand {
+  display: none;
+}
+
+.ws-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  max-width: 560px;
+  height: 32px;
+  padding: 0 10px;
+  color: var(--text-secondary);
+  font: 500 12px/1 var(--font-sans);
+  text-align: left;
+  background: var(--ws-surface-2);
+  border: 1px solid var(--ws-line-strong);
+  border-radius: 4px;
+  cursor: text;
+}
+
+.ws-search:hover,
+.ws-search:focus-visible {
+  border-color: rgba(var(--accent-rgb), 0.6);
+  color: var(--text-primary);
+}
+
+.ws-search .ws-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.ws-search-text {
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ws-search-kbd {
+  flex: none;
+  padding: 2px 6px;
+  color: var(--text-secondary);
+  font: 500 10px/1.2 var(--font-mono);
+  border: 1px solid var(--ws-line-strong);
+  border-radius: 3px;
+}
+
+.ws-topbar-actions {
+  flex: 1 1 auto;
+  min-width: var(--ws-actions-reserve, 0px);
+}
+
+.ws-clock {
+  flex: none;
+  min-width: 112px;
+  color: var(--text-primary);
+  font: 500 12px/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-align: right;
+}
+
+.ws-icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Brand: the existing title bar, compacted into the top bar's left slot. */
+:root[data-workspace='workstation'] body:not(.cockpit-mode) #title-bar {
+  position: fixed !important;
+  z-index: 310;
+  top: 0 !important;
+  left: 0 !important;
+  right: auto !important;
+  bottom: auto !important;
+  display: flex;
+  align-items: center;
+  width: 220px;
+  height: var(--ws-top);
+  margin: 0 !important;
+  padding: 0 0 0 16px !important;
+  transform: none !important;
+  pointer-events: none;
+}
+
+:root[data-workspace='workstation'] body:not(.cockpit-mode) #title-bar h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font: 600 15px/1 var(--font-sans) !important;
+  letter-spacing: 0.32em !important;
+  text-shadow: none !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #title-bar
+  .title-logo {
+  width: 24px !important;
+  height: 24px !important;
+  margin: 0 !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #title-bar
+  .subtitle,
+:root[data-workspace='workstation'] body:not(.cockpit-mode) #style-indicator {
+  display: none !important;
+}
+
+/* Globe actions: compact square icon buttons at the right of the bar. */
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #top-center-actions {
+  position: fixed !important;
+  z-index: 310;
+  top: 8px !important;
+  right: var(--ws-topbar-right, 330px) !important;
+  left: auto !important;
+  display: flex;
+  gap: 4px;
+  transform: none !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #top-center-actions
+  > button {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  border-radius: 4px !important;
+  background: var(--ws-surface-2) !important;
+  border: 1px solid var(--ws-line-strong) !important;
+  box-shadow: none !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #top-center-actions
+  > button:hover {
+  border-color: rgba(var(--accent-rgb), 0.6) !important;
+}
+
+:root[data-workspace='workstation'] body:not(.cockpit-mode) #key-setup-chip {
+  position: fixed !important;
+  z-index: 310;
+  top: 8px !important;
+  right: calc(
+    var(--ws-topbar-right, 330px) + var(--ws-actions-w, 176px) + 10px
+  ) !important;
+  bottom: auto !important;
+  left: auto !important;
+  height: 32px;
+  border-radius: 4px !important;
+  font-size: 10px !important;
+  box-shadow: none !important;
+}
+
+/* Transient chips drop just under the bar, centered on the viewport. */
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  :is(#global-loading-status, #traffic-sync-chip, #cctv-sync-chip) {
+  top: calc(var(--ws-top) + 10px) !important;
+}
+
+/* ── Left tool rail ──────────────────────────────────────────────── */
+.ws-rail {
+  position: fixed;
+  z-index: 290;
+  top: var(--ws-top);
+  bottom: var(--ws-bottom);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  width: var(--ws-rail);
+  padding: 6px 0;
+  background: var(--ws-surface);
+  border-right: 1px solid var(--ws-line-strong);
+}
+
+.ws-nav-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 0;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.ws-nav-btn[hidden] {
+  display: none;
+}
+
+.ws-rail .ws-nav-btn {
+  width: 100%;
+  height: 56px;
+  border-left: 2px solid transparent;
+}
+
+.ws-nav-label {
+  font: 600 8.5px/1 var(--font-sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ws-nav-btn:hover {
+  color: var(--text-primary);
+  background: var(--ws-surface-2);
+}
+
+.ws-nav-btn.active {
+  color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.08);
+}
+
+.ws-rail .ws-nav-btn.active {
+  border-left-color: var(--accent);
+}
+
+.ws-nav-badge {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  min-width: 16px;
+  padding: 1px 4px;
+  color: #0b0d10;
+  font: 700 9px/14px var(--font-mono);
+  text-align: center;
+  background: var(--alert, #ff4d4f);
+  border-radius: 8px;
+}
+
+/* ── Inspector tab strip ─────────────────────────────────────────── */
+.ws-tabs {
+  position: fixed;
+  z-index: 290;
+  top: var(--ws-top);
+  right: 0;
+  display: flex;
+  width: var(--ws-inspector);
+  height: var(--ws-tabs);
+  background: var(--ws-surface);
+  border-bottom: 1px solid var(--ws-line-strong);
+  border-left: 1px solid var(--ws-line-strong);
+}
+
+.ws-tabs .ws-nav-btn {
+  flex: 1 1 0;
+  height: 100%;
+  border-bottom: 2px solid transparent;
+}
+
+.ws-tabs .ws-nav-btn .ws-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.ws-tabs .ws-nav-btn.active {
+  border-bottom-color: var(--accent);
+}
+
+/* ── Docked panels ───────────────────────────────────────────────── */
+:root[data-workspace='workstation'] body:not(.cockpit-mode) #left-panel-stack,
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #right-context-rail {
+  pointer-events: none !important;
+}
+
+/* Collapsed managed panels are reached from the rail or tab strip. */
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  :is(
+    #data-panel,
+    #pp-toggles,
+    #scene-panel,
+    #cctv-panel,
+    #draw-panel,
+    #route-panel,
+    #intel-panel,
+    #alerts-panel,
+    #case-panel,
+    #global-context-panel,
+    #weather-panel,
+    #recent-imagery-panel
+  ).collapsed {
+  display: none !important;
+}
+
+/* Drawer: one tool panel beside the rail. */
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  :is(
+    #data-panel,
+    #pp-toggles,
+    #scene-panel,
+    #cctv-panel,
+    #draw-panel,
+    #route-panel
+  ):not(.collapsed) {
+  position: fixed !important;
+  z-index: 280;
+  top: var(--ws-top) !important;
+  bottom: var(--ws-bottom) !important;
+  left: var(--ws-rail) !important;
+  right: auto !important;
+  width: var(--ws-drawer) !important;
+  max-width: none !important;
+  height: auto !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden auto !important;
+  transform: none !important;
+  border: 0 !important;
+  border-right: 1px solid var(--ws-line-strong) !important;
+  pointer-events: auto !important;
+}
+
+/* Inspector: one tab panel under the tab strip. */
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  :is(
+    #intel-panel,
+    #alerts-panel,
+    #case-panel,
+    #global-context-panel,
+    #weather-panel,
+    #recent-imagery-panel
+  ):not(.collapsed) {
+  position: fixed !important;
+  z-index: 280;
+  top: calc(var(--ws-top) + var(--ws-tabs)) !important;
+  bottom: var(--ws-bottom) !important;
+  right: 0 !important;
+  left: auto !important;
+  width: var(--ws-inspector) !important;
+  max-width: none !important;
+  height: auto !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden auto !important;
+  transform: none !important;
+  border: 0 !important;
+  border-left: 1px solid var(--ws-line-strong) !important;
+  pointer-events: auto !important;
+}
+
+/* Inner wrappers fill the dock and scroll inside it. */
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  :is(
+    #data-panel,
+    #pp-toggles,
+    #scene-panel,
+    #cctv-panel,
+    #draw-panel,
+    #route-panel,
+    #intel-panel,
+    #alerts-panel,
+    #case-panel,
+    #global-context-panel,
+    #weather-panel,
+    #recent-imagery-panel
+  ):not(.collapsed)
+  > :is(
+    .data-panel-inner,
+    .pp-panel-body,
+    .scene-panel-inner,
+    .cctv-panel-inner,
+    .draw-panel-inner,
+    .route-panel-inner,
+    .intel-panel-inner,
+    .alerts-panel-inner,
+    .case-panel-inner,
+    .global-context-panel-inner,
+    .weather-panel-inner,
+    .recent-imagery-panel-inner
+  ) {
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+  padding: 14px 16px 18px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  :is(
+    #data-panel,
+    #pp-toggles,
+    #scene-panel,
+    #cctv-panel,
+    #draw-panel,
+    #route-panel,
+    #intel-panel,
+    #alerts-panel,
+    #case-panel,
+    #global-context-panel,
+    #weather-panel,
+    #recent-imagery-panel
+  ):not(.collapsed)
+  [data-rail-scroller] {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* The region chrome replaces each panel's own collapse affordance. */
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  :is(
+    #data-panel,
+    #scene-panel,
+    #cctv-panel,
+    #draw-panel,
+    #route-panel,
+    #intel-panel,
+    #alerts-panel,
+    #case-panel,
+    #global-context-panel,
+    #weather-panel,
+    #recent-imagery-panel
+  )
+  > div
+  > .panel-header
+  > .panel-collapse-btn,
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #pp-toggles
+  .pp-collapse-btn {
+  /* Docked panels close with an explicit ✕ (it collapses the panel through
+     the shell's own disclosure, so persistence and share state stay in sync). */
+  visibility: visible;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 26px !important;
+  height: 26px !important;
+  margin-left: auto;
+  font-size: 0 !important;
+  color: var(--text-secondary) !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 4px !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  :is(.panel-collapse-btn, .pp-collapse-btn)::before {
+  content: '✕';
+  font: 500 13px/1 var(--font-sans);
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  :is(.panel-collapse-btn, .pp-collapse-btn):hover {
+  color: var(--text-primary) !important;
+  border-color: var(--ws-line-strong) !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  :is(
+    #data-panel,
+    #pp-toggles,
+    #scene-panel,
+    #cctv-panel,
+    #draw-panel,
+    #route-panel,
+    #intel-panel,
+    #alerts-panel,
+    #case-panel,
+    #global-context-panel,
+    #weather-panel,
+    #recent-imagery-panel
+  )
+  :is(.panel-title, .pp-header-label) {
+  color: var(--text-primary) !important;
+  font: 600 11px/1 var(--font-sans) !important;
+  letter-spacing: 0.16em !important;
+}
+
+/* The DATA LAYERS panel used to toggle with an `.active` class only. */
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #data-panel:not(.collapsed) {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* ── Status bar + command dock ───────────────────────────────────── */
+.ws-statusbar {
+  position: fixed;
+  z-index: 260;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: var(--ws-bottom);
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px 0 calc(var(--ws-rail) + 12px);
+  color: var(--text-secondary);
+  font: 500 10.5px/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  background: var(--ws-surface);
+  border-top: 1px solid var(--ws-line-strong);
+}
+
+.ws-status-brand {
+  opacity: 0.7;
+}
+
+.ws-status-feeds {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ws-status-feeds::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-dim);
+}
+
+.ws-status-feeds[data-tone='ok']::before {
+  background: var(--accent-2, #2dd4bf);
+}
+
+.ws-status-feeds[data-tone='busy']::before {
+  background: var(--accent);
+}
+
+.ws-status-feeds[data-tone='warn']::before {
+  background: var(--alert, #ff4d4f);
+}
+
+/* Dock segments sit inline in the status bar, centered on the viewport. */
+:root[data-workspace='workstation'] body:not(.cockpit-mode) #command-dock {
+  z-index: 270 !important;
+  bottom: 0 !important;
+  left: 50% !important;
+  width: min(640px, calc(100vw - 2 * var(--ws-inspector))) !important;
+  height: var(--ws-bottom) !important;
+  min-height: 0 !important;
+  grid-template-columns: 1fr 172px 1fr !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-left: 1px solid var(--ws-line) !important;
+  border-right: 1px solid var(--ws-line) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  transform: translateX(-50%) !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #command-dock
+  > #gev-voice-control {
+  margin: 0 !important;
+  padding: 0 10px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: rgba(var(--accent-rgb), 0.06) !important;
+  box-shadow: none !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #command-dock
+  :is(.panel-inner, .location-inner) {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* ── Globe viewport furniture ───────────────────────────────────── */
+:root[data-workspace='workstation'] body:not(.cockpit-mode) #cesium-credits {
+  left: calc(var(--ws-rail) + 12px) !important;
+  bottom: calc(var(--ws-bottom) + 8px) !important;
+}
+
+/* HUD readouts live inside the globe viewport, between the chrome. */
+:root[data-workspace='workstation'] body:not(.cockpit-mode) #intel-hud {
+  inset: calc(var(--ws-top) + 12px) calc(var(--ws-inspector) + 16px)
+    calc(var(--ws-bottom) + 12px) calc(var(--ws-rail) + 16px) !important;
+}
+
+:root[data-workspace='workstation'][data-ws-drawer='open']
+  body:not(.cockpit-mode)
+  #intel-hud {
+  left: calc(var(--ws-rail) + var(--ws-drawer) + 16px) !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #intel-hud
+  :is(.hud-top-left, .hud-top-right) {
+  top: 0 !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #intel-hud
+  :is(.hud-bottom-left, .hud-bottom-right) {
+  bottom: 28px !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #intel-hud
+  :is(.hud-top-left, .hud-bottom-left) {
+  left: 0 !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #intel-hud
+  :is(.hud-top-right, .hud-bottom-right) {
+  right: 0 !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #intel-hud
+  :is(.hud-edge, .hud-bracket, .hud-sonar) {
+  display: none !important;
+}
+
+:root[data-workspace='workstation'] body:not(.cockpit-mode) #intel-hud * {
+  text-shadow: none !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #intel-hud
+  .hud-content {
+  padding: 8px 10px;
+  font-size: 11px !important;
+  letter-spacing: 0.08em !important;
+  background: color-mix(in srgb, var(--ws-surface) 82%, transparent);
+  border: 1px solid var(--ws-line-strong);
+  border-radius: 4px;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #intel-hud
+  .hud-mode {
+  font-size: 13px !important;
+  letter-spacing: 0.2em !important;
+}
+
+/* ── Loading screen and first run ────────────────────────────────── */
+:root[data-workspace='workstation'] #first-run-launcher {
+  left: 50% !important;
+  width: min(44rem, calc(100vw - 2rem)) !important;
+  background: var(--ws-surface) !important;
+  border: 1px solid var(--ws-line-strong) !important;
+  border-top: 3px solid var(--accent) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  text-align: left;
+}
+
+:root[data-workspace='workstation'] #first-run-launcher .first-run-choices {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+:root[data-workspace='workstation']
+  #first-run-launcher
+  .first-run-choices
+  > button {
+  min-height: 96px;
+  align-items: flex-start !important;
+  border-radius: 4px !important;
+  background: var(--ws-surface-2) !important;
+  border: 1px solid var(--ws-line-strong) !important;
+  box-shadow: none !important;
+}
+
+:root[data-workspace='workstation']
+  #first-run-launcher
+  .first-run-choices
+  > button:hover {
+  border-color: rgba(var(--accent-rgb), 0.7) !important;
+}
+
+/* ── Narrow screens: bottom navigation + sheets ─────────────────── */
+@media (max-width: 900px) {
+  :root {
+    --ws-top: 44px;
+    --ws-rail: 0px;
+    --ws-nav: 52px;
+    --ws-bottom: 0px;
+  }
+
+  .ws-topbar {
+    gap: 8px;
+    padding: 0 8px 0 56px;
+  }
+
+  .ws-search-text,
+  .ws-search-kbd,
+  .ws-clock {
+    display: none;
+  }
+
+  .ws-search {
+    flex: 0 0 auto;
+    width: 36px;
+    justify-content: center;
+  }
+
+  :root[data-workspace='workstation'] body:not(.cockpit-mode) .ws-statusbar {
+    display: none;
+  }
+
+  :root[data-workspace='workstation'] body:not(.cockpit-mode) .ws-nav {
+    position: fixed;
+    z-index: 295;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    height: var(--ws-nav);
+    background: var(--ws-surface);
+    border-top: 1px solid var(--ws-line-strong);
+  }
+
+  .ws-rail,
+  .ws-tabs {
+    position: static;
+    flex-direction: row;
+    width: auto;
+    height: 100%;
+    padding: 0;
+    border: 0;
+  }
+
+  .ws-rail {
+    flex: 4 1 0;
+    border-right: 1px solid var(--ws-line-strong);
+  }
+
+  .ws-tabs {
+    flex: 5 1 0;
+  }
+
+  .ws-rail .ws-nav-btn,
+  .ws-tabs .ws-nav-btn {
+    flex: 1 1 0;
+    height: 100%;
+    border: 0;
+  }
+
+  .ws-nav-label {
+    display: none;
+  }
+
+  :root[data-workspace='workstation'] body:not(.cockpit-mode) #title-bar {
+    width: 48px;
+    padding-left: 12px !important;
+  }
+
+  :root[data-workspace='workstation']
+    body:not(.cockpit-mode)
+    #title-bar
+    h1
+    > span:last-child {
+    display: none;
+  }
+
+  :root[data-workspace='workstation']
+    body:not(.cockpit-mode)
+    #top-center-actions {
+    right: 8px !important;
+    top: 6px !important;
+  }
+
+  :root[data-workspace='workstation']
+    body:not(.cockpit-mode)
+    #top-center-actions
+    > button {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+  }
+
+  :root[data-workspace='workstation'] body:not(.cockpit-mode) #key-setup-chip {
+    display: none !important;
+  }
+
+  /* Both regions become bottom sheets above the navigation. */
+  :root[data-workspace='workstation']
+    body:not(.cockpit-mode)
+    :is(
+      #data-panel,
+      #pp-toggles,
+      #scene-panel,
+      #cctv-panel,
+      #intel-panel,
+      #alerts-panel,
+      #case-panel,
+      #global-context-panel,
+      #weather-panel,
+      #recent-imagery-panel
+    ):not(.collapsed) {
+    top: 42vh !important;
+    right: 0 !important;
+    bottom: calc(var(--ws-nav) + 44px) !important;
+    left: 0 !important;
+    width: auto !important;
+    border: 0 !important;
+    border-top: 1px solid var(--ws-line-strong) !important;
+  }
+
+  :root[data-workspace='workstation'] body:not(.cockpit-mode) #command-dock {
+    bottom: var(--ws-nav) !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 44px !important;
+    grid-template-columns: 1fr 120px 1fr !important;
+    background: var(--ws-surface) !important;
+    border-top: 1px solid var(--ws-line-strong) !important;
+    transform: none !important;
+  }
+
+  :root[data-workspace='workstation'] body:not(.cockpit-mode) #cesium-credits {
+    left: 8px !important;
+    bottom: calc(var(--ws-nav) + 52px) !important;
+  }
+
+  :root[data-workspace='workstation'] body:not(.cockpit-mode) #intel-hud {
+    display: none !important;
+  }
+}
+
+/* ── Compact dock segments (status bar) ──────────────────────────── */
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #command-dock
+  :is(#location-bar, #control-panel) {
+  height: var(--ws-bottom) !important;
+  min-height: 0 !important;
+  border-color: var(--ws-line) !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #command-dock
+  :is(.location-inner, .panel-inner) {
+  height: var(--ws-bottom) !important;
+  min-height: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 10px !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #command-dock
+  :is(.location-toolbar-label, .panel-title) {
+  font: 600 10px/1 var(--font-sans) !important;
+  letter-spacing: 0.14em !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #command-dock
+  > #gev-voice-control {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  height: var(--ws-bottom) !important;
+  min-height: 0 !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #command-dock
+  #gev-voice-control
+  :is(.gev-voice-visualizer, .gev-voice-readout, .gev-voice-kicker) {
+  display: none !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #command-dock
+  #gev-voice-button {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 6px !important;
+  height: 28px !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #command-dock
+  #gev-voice-button
+  .gev-mic-orbit {
+  width: 24px !important;
+  height: 24px !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #command-dock
+  #gev-voice-button
+  .gev-mic-orbit
+  img {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #command-dock
+  .gev-voice-heading {
+  position: static !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  order: 2;
+}
+
+/* Open trays rise above the status bar as solid sheets. */
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #command-dock
+  :is(#location-bar, #control-panel):not(.collapsed)
+  .dock-popover-content {
+  position: absolute !important;
+  bottom: calc(var(--ws-bottom) + 6px) !important;
+  left: 50% !important;
+  top: auto !important;
+  width: min(560px, 92vw) !important;
+  transform: translateX(-50%) !important;
+  background: var(--ws-surface) !important;
+  border: 1px solid var(--ws-line-strong) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:root[data-workspace='workstation'] body:not(.cockpit-mode) #intel-hud * {
+  letter-spacing: 0.06em !important;
+}
+
+:root[data-workspace='workstation']
+  body:not(.cockpit-mode)
+  #command-dock
+  #gev-voice-button
+  .gev-mic-label {
+  display: none !important;
+}
+
+/* ── Loading screen: Argus Panoptes watches the pointer ─────────── */
+#loading-screen {
+  background:
+    radial-gradient(
+      circle at 50% 46%,
+      rgba(var(--accent-rgb), 0.07),
+      transparent 42%
+    ),
+    var(--bg-dark, #0b0d10) !important;
+  cursor: crosshair;
+}
+
+#loading-screen .loader-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+  background: none;
+  border: 0;
+}
+
+#loading-screen .loader-eyes {
+  width: min(62vmin, 440px);
+  aspect-ratio: 1;
+}
+
+.le-stage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.le-orbit {
+  fill: none;
+  stroke: rgba(var(--accent-rgb), 0.18);
+  stroke-width: 1;
+  stroke-dasharray: 2 7;
+}
+
+.le-outline {
+  fill: rgba(var(--accent-rgb), 0.06);
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.le-main .le-outline {
+  stroke-width: 3;
+  filter: drop-shadow(0 0 10px rgba(var(--accent-rgb), 0.35));
+}
+
+.le-iris-disc {
+  fill: var(--accent);
+}
+
+.le-iris-ring {
+  fill: none;
+  stroke: rgba(26, 16, 5, 0.45);
+  stroke-width: 2;
+}
+
+.le-pupil {
+  fill: #120b03;
+}
+
+.le-glint {
+  fill: #fff7e6;
+  opacity: 0.85;
+}
+
+.le-lid {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 90ms ease-in;
+}
+
+.le-lid.blink {
+  transform: scaleY(0.08);
+}
+
+#loading-screen .loader-content h2 {
+  margin: 6px 0 0 !important;
+  font: 600 22px/1 var(--font-sans) !important;
+  letter-spacing: 0.42em !important;
+  text-shadow: none !important;
+}
+
+#loading-screen .loader-status {
+  margin: 0 !important;
+  color: var(--text-secondary) !important;
+  font: 500 11px/1.4 var(--font-mono) !important;
+  letter-spacing: 0.08em !important;
+  text-align: center !important;
+}
+
+#loading-screen .loader-content::after {
+  content: '';
+  width: min(320px, 70vw);
+  height: 2px;
+  margin-top: 4px;
+  background: linear-gradient(
+      90deg,
+      transparent,
+      var(--accent) 40%,
+      transparent 60%
+    )
+    0 0 / 220% 100% rgba(255, 255, 255, 0.08);
+  animation: ws-boot 1.6s linear infinite;
+}
+
+/* Sight lines from every eye converge on the pointer. */
+.le-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 240ms ease;
+}
+
+.le-overlay.tracking {
+  opacity: 1;
+}
+
+.le-sight {
+  stroke: rgba(var(--accent-rgb), 0.22);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+}
+
+.le-reticle-ring,
+.le-reticle-ticks {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.le-reticle-dot {
+  fill: var(--accent);
+}
+
+.le-readout {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  gap: 4px;
+  min-width: 220px;
+  padding: 8px 10px;
+  color: var(--text-primary);
+  background: rgba(16, 19, 23, 0.92);
+  border: 1px solid rgba(var(--accent-rgb), 0.5);
+  border-radius: 4px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 240ms ease;
+  will-change: transform;
+}
+
+.le-readout.tracking {
+  opacity: 1;
+}
+
+.le-readout strong {
+  color: var(--accent);
+  font: 600 10px/1 var(--font-mono);
+  letter-spacing: 0.16em;
+}
+
+.le-readout.locked strong {
+  color: var(--alert, #ff4d4f);
+}
+
+.le-readout span {
+  color: var(--text-secondary);
+  font: 500 10px/1.3 var(--font-mono);
+  letter-spacing: 0.04em;
+}
+
+.le-readout i {
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--accent) var(--lock, 0%),
+    rgba(255, 255, 255, 0.1) var(--lock, 0%)
+  );
+}
+
+@keyframes ws-boot {
+  from {
+    background-position: 110% 0;
+  }
+  to {
+    background-position: -110% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #loading-screen .loader-content::after {
+    animation: none;
+  }
+}
+
+@media (max-width: 900px) {
+  :root[data-workspace='workstation']
+    body:not(.cockpit-mode)
+    #command-dock
+    :is(.location-toolbar-label, .panel-title) {
+    /* Icons only: the labels do not fit a 390 px row. */
+    display: inline-flex !important;
+    align-items: center !important;
+    font-size: 0 !important;
+    letter-spacing: 0 !important;
+  }
+
+  :root[data-workspace='workstation']
+    body:not(.cockpit-mode)
+    #command-dock
+    .dock-label-icon {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    margin: 0 !important;
+  }
+
+  :root[data-workspace='workstation']
+    body:not(.cockpit-mode)
+    #command-dock
+    :is(.gev-voice-heading, .gev-voice-cost) {
+    display: none !important;
+  }
+
+  :root[data-workspace='workstation']
+    body:not(.cockpit-mode)
+    #command-dock
+    > :is(#location-bar, #control-panel, #gev-voice-control) {
+    background: var(--ws-surface) !important;
+  }
+
+  /* The status-bar segment rules size children from --ws-bottom, which is 0
+     here; give the mobile dock row explicit, evenly shared cells. */
+  :root[data-workspace='workstation']
+    body:not(.cockpit-mode)
+    #command-dock
+    > :is(#location-bar, #control-panel, #gev-voice-control) {
+    flex: 1 1 0 !important;
+    height: 44px !important;
+    width: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  :root[data-workspace='workstation']
+    body:not(.cockpit-mode)
+    #command-dock
+    :is(.location-inner, .panel-inner) {
+    height: 44px !important;
+    width: 100% !important;
+  }
+}

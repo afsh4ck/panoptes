@@ -1,0 +1,1321 @@
+/* ═══════════════════════════════════════════════════════════════════
+   PANOPTES · Display drawer
+   The workstation DISPLAY drawer as a settings list: titled sections,
+   one card per feature, an on/off switch on every toggle, and indented
+   sub-settings that only appear while their feature is on. Scoped to the
+   workstation layout; the cockpit display portal (#cockpit-display-panel)
+   shares the same cards so the toggles read the same in both places.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel) {
+  --dp-accent: var(--accent, #f5a524);
+  --dp-accent-rgb: var(--accent-rgb, 245, 165, 36);
+  --dp-card: var(--ws-surface-2, #161a20);
+  --dp-line: var(--ws-line, rgba(255, 255, 255, 0.08));
+  --dp-line-strong: var(--ws-line-strong, rgba(255, 255, 255, 0.14));
+  --dp-indent: 14px;
+}
+
+/* ── Body and section titles ───────────────────────────────────────── */
+:root[data-workspace='workstation']
+  #pp-toggles:not(.collapsed)
+  > .pp-panel-body {
+  display: flex !important;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 16px 24px !important;
+}
+
+:root[data-workspace='workstation']
+  #pp-toggles:not(.collapsed)
+  > .pp-header-row {
+  min-height: 48px;
+  padding: 0 12px 0 16px;
+  border-bottom: 1px solid var(--dp-line) !important;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 2px 2px;
+  color: var(--text-dim, #7d8590);
+  font: 600 10px/1 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--dp-line);
+}
+
+:root[data-workspace='workstation']
+  #pp-toggles
+  .pp-panel-body
+  > .pp-section-title:first-child {
+  margin-top: 6px;
+}
+
+/* Cards keep their natural height; the drawer scrolls instead. */
+:root[data-workspace='workstation']
+  #pp-toggles:not(.collapsed)
+  > .pp-panel-body
+  > * {
+  flex: none;
+}
+
+/* ── Feature cards ─────────────────────────────────────────────────── */
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-toggle-group {
+  width: 100% !important;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid var(--dp-line);
+  border-radius: 10px;
+  background: var(--dp-card);
+  transition: border-color 160ms ease;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #cockpit-display-panel)
+  .pp-toggle-group:has(> .pp-toggle-btn.active) {
+  border-color: rgba(var(--dp-accent-rgb), 0.38);
+}
+
+/* ── Toggle rows: icon · name + description · switch ───────────────── */
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-toggle-btn,
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  #detection-toggle.active,
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  #detection-toggle.panoptic,
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  #detection-toggle.god {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) 36px;
+  align-items: center;
+  column-gap: 12px;
+  width: 100%;
+  min-height: 58px;
+  margin: 0;
+  padding: 10px 14px;
+  box-sizing: border-box;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  animation: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-toggle-btn:hover {
+  background: rgba(var(--dp-accent-rgb), 0.05) !important;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-toggle-btn:focus-visible {
+  outline: 2px solid rgba(var(--dp-accent-rgb), 0.7);
+  outline-offset: -2px;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-icon,
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #cockpit-display-panel)
+  .pp-icon.material-symbols-outlined {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 7px;
+  background: rgba(127, 127, 127, 0.1);
+  color: var(--text-secondary, #a8b0ba) !important;
+  font-size: 17px !important;
+  text-shadow: none !important;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-toggle-btn.active
+  .pp-icon {
+  background: rgba(var(--dp-accent-rgb), 0.16);
+  color: var(--dp-accent) !important;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-label,
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-toggle-btn.active
+  .pp-label,
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #cockpit-display-panel)
+  #detection-toggle.active
+  .pp-label {
+  color: var(--text-primary, #e6e9ee) !important;
+  font: 600 12px/1.2 var(--font-sans, system-ui, sans-serif);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-shadow: none !important;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-desc {
+  overflow: hidden;
+  color: var(--text-dim, #7d8590);
+  font: 400 11px/1.3 var(--font-sans, system-ui, sans-serif);
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The switch: a track with a knob, orange and knob-right when on. */
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-toggle-btn::after {
+  content: '';
+  justify-self: end;
+  width: 34px;
+  height: 18px;
+  border-radius: 9px;
+  background:
+    radial-gradient(circle at 9px 50%, #c9ced6 0 6px, transparent 6.5px),
+    rgba(127, 127, 127, 0.28);
+  transition: background 160ms ease;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-toggle-btn.active::after {
+  background:
+    radial-gradient(circle at 25px 50%, #1a1206 0 6px, transparent 6.5px),
+    var(--dp-accent);
+}
+
+/* Clean UI is an action, not a setting: an arrow instead of a switch. */
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  #clean-view-toggle::after {
+  width: 18px;
+  height: 18px;
+  border-radius: 0;
+  background: none;
+  content: '›';
+  color: var(--text-dim, #7d8590);
+  font: 400 22px/18px var(--font-sans, system-ui, sans-serif);
+  text-align: center;
+}
+
+/* ── Sub-settings (visible only while the feature is on) ───────────── */
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-slider-row {
+  min-height: 40px;
+  margin: 0;
+  padding: 6px 14px 6px var(--dp-indent);
+  box-sizing: border-box;
+  gap: 12px;
+  border: 0 !important;
+  border-top: 1px solid var(--dp-line) !important;
+  border-radius: 0 !important;
+  background: rgba(0, 0, 0, 0.12) !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #cockpit-display-panel)
+  .pp-toggle-group:has(.pp-slider-row.visible)
+  .pp-toggle-btn {
+  border-radius: 0 !important;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-slider-mini-label {
+  flex: 0 0 76px;
+  min-width: 0;
+  color: var(--text-secondary, #a8b0ba);
+  font: 500 11px/1.2 var(--font-sans, system-ui, sans-serif);
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-slider {
+  flex: 1 1 auto;
+  min-width: 60px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(127, 127, 127, 0.25);
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #cockpit-display-panel)
+  .pp-slider::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--dp-card);
+  border-radius: 50%;
+  background: var(--dp-accent);
+  box-shadow: 0 0 0 1px rgba(var(--dp-accent-rgb), 0.5);
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--dp-card);
+  border-radius: 50%;
+  background: var(--dp-accent);
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-slider-value {
+  flex: 0 0 42px;
+  color: var(--text-primary, #e6e9ee);
+  font: 500 11px/1 var(--font-mono, ui-monospace, monospace);
+  text-align: right;
+}
+
+/* Segmented choices and selects fill the row instead of shouting. */
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-mode-seg {
+  flex: 1 1 auto;
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--dp-line-strong);
+  border-radius: 7px;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-mode-btn {
+  flex: 1 1 0;
+  min-height: 28px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-secondary, #a8b0ba);
+  font: 600 10px/1 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-mode-btn
+  + .pp-mode-btn {
+  border-left: 1px solid var(--dp-line-strong);
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-mode-btn.active {
+  background: rgba(var(--dp-accent-rgb), 0.18);
+  color: var(--dp-accent);
+  box-shadow: inset 0 -2px 0 var(--dp-accent);
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-select,
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-text-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 30px;
+  border: 1px solid var(--dp-line-strong);
+  border-radius: 7px;
+  background-color: var(--ws-surface, #101317);
+  color: var(--text-primary, #e6e9ee);
+  font: 500 12px/1.2 var(--font-sans, system-ui, sans-serif);
+}
+
+/* Draw: label, colour and clear wrap onto tidy lines. */
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  #draw-label-row.visible {
+  flex-wrap: wrap;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  #draw-label-row
+  .pp-text-input {
+  flex-basis: 100%;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #cockpit-display-panel)
+  #draw-label-row
+  .draw-color-select {
+  flex: 1 1 auto;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #cockpit-display-panel)
+  #draw-label-row
+  .draw-clear-btn {
+  flex: 0 0 auto;
+  min-width: 72px;
+  border: 1px solid var(--dp-line-strong);
+  border-radius: 7px;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .draw-hint:empty {
+  display: none;
+}
+
+/* ── Theme: a settings row with its own two-state button ───────────── */
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  #theme-row {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  min-height: 58px;
+  padding: 10px 14px;
+  border-top: 0 !important;
+  background: transparent !important;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #cockpit-display-panel)
+  #theme-row
+  .pp-slider-mini-label {
+  color: var(--text-primary, #e6e9ee);
+  font: 600 12px/1.2 var(--font-sans, system-ui, sans-serif);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  #theme-toggle {
+  flex: none;
+  min-width: 72px;
+  min-height: 28px;
+  border: 1px solid var(--dp-line-strong);
+  border-radius: 7px;
+}
+
+/* ── Preset parameters keep the card language ──────────────────────── */
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  #param-slider-panel.active {
+  width: 100% !important;
+  box-sizing: border-box;
+  border: 1px solid var(--dp-line) !important;
+  border-radius: 10px !important;
+  background: var(--dp-card) !important;
+}
+
+/* ── Light theme: darker knob on the off switch ────────────────────── */
+:root[data-theme='light'][data-workspace='workstation']
+  #pp-toggles
+  .pp-toggle-btn:not(.active)::after {
+  background:
+    radial-gradient(circle at 9px 50%, #ffffff 0 6px, transparent 6.5px),
+    rgba(15, 20, 30, 0.22);
+}
+
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #cockpit-display-panel)
+  #theme-row
+  .pp-text
+  .pp-slider-mini-label {
+  flex: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CAMERAS (CCTV) drawer: power switch, feed, camera picker, two actions;
+   overlays, calibration and the scene summary sit in closed sections.
+   ═══════════════════════════════════════════════════════════════════ */
+:root[data-workspace='workstation'] #cctv-panel {
+  --dp-accent: var(--accent, #f5a524);
+  --dp-accent-rgb: var(--accent-rgb, 245, 165, 36);
+  --dp-card: var(--ws-surface-2, #161a20);
+  --dp-line: var(--ws-line, rgba(255, 255, 255, 0.08));
+  --dp-line-strong: var(--ws-line-strong, rgba(255, 255, 255, 0.14));
+}
+
+:root[data-workspace='workstation'] #cctv-panel .cyber-panel-body {
+  display: flex !important;
+  flex-direction: column;
+  gap: 10px;
+}
+
+:root[data-workspace='workstation'] #cctv-panel .cyber-panel-body > * {
+  flex: none;
+  margin: 0 !important;
+}
+
+/* Buttons: one calm style for every action. */
+:root[data-workspace='workstation'] #cctv-panel .scene-btn {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--dp-line-strong) !important;
+  border-radius: 8px !important;
+  background: var(--dp-card) !important;
+  box-shadow: none !important;
+  color: var(--text-primary, #e6e9ee) !important;
+  font: 600 11px/1.1 var(--font-sans, system-ui, sans-serif) !important;
+  letter-spacing: 0.06em;
+}
+
+:root[data-workspace='workstation']
+  #cctv-panel
+  .scene-btn:hover:not(:disabled) {
+  border-color: rgba(var(--dp-accent-rgb), 0.6) !important;
+}
+
+:root[data-workspace='workstation'] #cctv-panel .scene-btn:disabled {
+  opacity: 0.45;
+}
+
+/* Power: a switch row. */
+:root[data-workspace='workstation'] #cctv-panel #cctv-enable-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  font-size: 12px !important;
+  text-align: left;
+}
+
+:root[data-workspace='workstation'] #cctv-panel #cctv-enable-btn::after {
+  content: '';
+  width: 34px;
+  height: 18px;
+  border-radius: 9px;
+  background:
+    radial-gradient(circle at 9px 50%, #c9ced6 0 6px, transparent 6.5px),
+    rgba(127, 127, 127, 0.28);
+}
+
+:root[data-workspace='workstation'] #cctv-panel #cctv-enable-btn.active {
+  border-color: rgba(var(--dp-accent-rgb), 0.5) !important;
+}
+
+:root[data-workspace='workstation'] #cctv-panel #cctv-enable-btn.active::after {
+  background:
+    radial-gradient(circle at 25px 50%, #1a1206 0 6px, transparent 6.5px),
+    var(--dp-accent);
+}
+
+:root[data-workspace='workstation'] #cctv-panel .cctv-frame-wrap {
+  overflow: hidden;
+  border: 1px solid var(--dp-line);
+  border-radius: 10px;
+}
+
+/* Camera picker: ‹ select › */
+:root[data-workspace='workstation'] #cctv-panel .cctv-nav-row {
+  display: grid;
+  width: 100%;
+  box-sizing: border-box;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  gap: 8px;
+}
+
+:root[data-workspace='workstation'] #cctv-panel .cctv-step {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  padding: 0 !important;
+  font-size: 20px !important;
+  line-height: 1 !important;
+}
+
+:root[data-workspace='workstation'] #cctv-panel #cctv-camera-select {
+  min-width: 0;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--dp-line-strong);
+  border-radius: 8px;
+  background-color: var(--ws-surface, #101317);
+  color: var(--text-primary, #e6e9ee);
+  font: 500 12px/1.2 var(--font-sans, system-ui, sans-serif);
+}
+
+:root[data-workspace='workstation'] #cctv-panel .cctv-action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* Status: a single quiet chip plus a short, clamped description. */
+:root[data-workspace='workstation'] #cctv-panel .cctv-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+:root[data-workspace='workstation'] #cctv-panel #cctv-source-badge {
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font: 600 10px/1.2 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.08em;
+}
+
+:root[data-workspace='workstation'] #cctv-panel #cctv-meta {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  color: var(--text-dim, #7d8590);
+  font: 400 11px/1.45 var(--font-sans, system-ui, sans-serif) !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+/* Collapsible sections. */
+:root[data-workspace='workstation'] #cctv-panel .cctv-section {
+  border: 1px solid var(--dp-line);
+  border-radius: 10px;
+  background: var(--dp-card);
+}
+
+:root[data-workspace='workstation'] #cctv-panel .cctv-section > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  color: var(--text-primary, #e6e9ee);
+  font: 600 11px/1 var(--font-sans, system-ui, sans-serif);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  list-style: none;
+  cursor: pointer;
+}
+
+:root[data-workspace='workstation']
+  #cctv-panel
+  .cctv-section
+  > summary::-webkit-details-marker {
+  display: none;
+}
+
+:root[data-workspace='workstation'] #cctv-panel .cctv-section > summary::after {
+  content: '›';
+  margin-left: auto;
+  color: var(--text-dim, #7d8590);
+  font-size: 18px;
+  transition: transform 160ms ease;
+}
+
+:root[data-workspace='workstation']
+  #cctv-panel
+  .cctv-section[open]
+  > summary::after {
+  transform: rotate(90deg);
+}
+
+:root[data-workspace='workstation'] #cctv-panel .cctv-section > :not(summary) {
+  margin: 0 12px 12px !important;
+}
+
+:root[data-workspace='workstation'] #cctv-panel #cctv-quality-chip {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(127, 127, 127, 0.16);
+  font: 600 9px/1.2 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.06em;
+}
+
+/* Overlay toggles as switch rows. */
+:root[data-workspace='workstation'] #cctv-panel .cctv-toggle-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+:root[data-workspace='workstation'] #cctv-panel .cctv-toggle-grid .scene-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  text-align: left;
+}
+
+:root[data-workspace='workstation']
+  #cctv-panel
+  .cctv-toggle-grid
+  .scene-btn::after {
+  content: '';
+  flex: none;
+  width: 30px;
+  height: 16px;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 8px 50%, #c9ced6 0 5px, transparent 5.5px),
+    rgba(127, 127, 127, 0.28);
+}
+
+:root[data-workspace='workstation']
+  #cctv-panel
+  .cctv-toggle-grid
+  .scene-btn.active::after {
+  background:
+    radial-gradient(circle at 22px 50%, #1a1206 0 5px, transparent 5.5px),
+    var(--dp-accent);
+}
+
+:root[data-workspace='workstation'] #cctv-panel .cctv-calibration-block {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+:root[data-workspace='workstation'] #cctv-panel #cctv-summary {
+  color: var(--text-secondary, #a8b0ba);
+  font: 400 11px/1.5 var(--font-sans, system-ui, sans-serif) !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+:root[data-workspace='workstation']
+  #cctv-panel
+  #cctv-source-badge[data-frame-state='held'] {
+  border-color: rgba(var(--dp-accent-rgb), 0.7);
+  background: rgba(var(--dp-accent-rgb), 0.14);
+  color: var(--dp-accent);
+}
+
+/* Camera catalog: counts, All / Live filter, street search. */
+:root[data-workspace='workstation'] #cctv-panel .cctv-catalog-bar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--dp-line);
+  border-radius: 10px;
+  background: var(--dp-card);
+}
+:root[data-workspace='workstation'] #cctv-panel .cctv-catalog-count {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  color: var(--text-dim, #7d8590);
+  font: 500 11px/1.2 var(--font-sans, system-ui, sans-serif);
+  white-space: nowrap;
+}
+:root[data-workspace='workstation'] #cctv-panel .cctv-catalog-count strong {
+  color: var(--text-primary, #e6e9ee);
+  font: 600 13px/1 var(--font-mono, ui-monospace, monospace);
+}
+:root[data-workspace='workstation']
+  #cctv-panel
+  .cctv-catalog-count
+  [data-cctv-live-count] {
+  color: #ff6b6b;
+}
+:root[data-workspace='workstation'] #cctv-panel .cctv-catalog-sep {
+  margin: 0 3px;
+}
+:root[data-workspace='workstation'] #cctv-panel .cctv-filter-seg {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid var(--dp-line-strong);
+  border-radius: 7px;
+}
+:root[data-workspace='workstation'] #cctv-panel .cctv-filter-btn {
+  min-height: 26px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary, #a8b0ba);
+  font: 600 10px/1 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+:root[data-workspace='workstation']
+  #cctv-panel
+  .cctv-filter-btn
+  + .cctv-filter-btn {
+  border-left: 1px solid var(--dp-line-strong);
+}
+:root[data-workspace='workstation'] #cctv-panel .cctv-filter-btn.active {
+  background: rgba(var(--dp-accent-rgb), 0.18);
+  color: var(--dp-accent);
+}
+:root[data-workspace='workstation'] #cctv-panel .cctv-camera-search {
+  grid-column: 1 / -1;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--dp-line-strong);
+  border-radius: 7px;
+  background: var(--ws-surface, #101317);
+  color: var(--text-primary, #e6e9ee);
+  font: 500 12px/1.2 var(--font-sans, system-ui, sans-serif);
+}
+:root[data-workspace='workstation'] #cctv-panel .cctv-camera-search:focus {
+  border-color: rgba(var(--dp-accent-rgb), 0.7);
+  outline: none;
+}
+
+/* Catalog bar as three clean rows: counts, filter, search. */
+:root[data-workspace='workstation'] #cctv-panel .cctv-catalog-bar {
+  grid-template-columns: 1fr;
+}
+:root[data-workspace='workstation'] #cctv-panel .cctv-filter-seg {
+  width: 100%;
+}
+:root[data-workspace='workstation'] #cctv-panel .cctv-filter-btn {
+  flex: 1 1 0;
+  min-height: 30px;
+}
+:root[data-workspace='workstation'] #cctv-panel .cctv-catalog-count {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* DRAW drawer body and how-to line. */
+:root[data-workspace='workstation'] #draw-panel .draw-panel-body {
+  display: flex !important;
+  flex-direction: column;
+  gap: 8px;
+}
+:root[data-workspace='workstation'] #draw-panel .draw-panel-help {
+  margin: 0 2px 12px;
+  color: var(--text-dim, #7d8590);
+  font: 400 12px/1.5 var(--font-sans, system-ui, sans-serif);
+}
+/* In its own drawer the draw options are always visible. */
+:root[data-workspace='workstation'] #draw-panel .pp-slider-row {
+  display: flex !important;
+}
+
+/* Draw shape picker uses the full row: no truncated Line / Pin labels. */
+:root[data-workspace='workstation']
+  #draw-panel
+  #draw-mode-row
+  > .pp-slider-mini-label {
+  display: none;
+}
+:root[data-workspace='workstation'] #draw-panel #draw-mode-row {
+  padding-left: 14px !important;
+}
+:root[data-workspace='workstation'] #draw-panel .pp-mode-btn {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+/* DRAW drawer: list of marked zones. */
+:root[data-workspace='workstation'] #draw-panel .draw-zone-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+:root[data-workspace='workstation'] #draw-panel .draw-zone-title {
+  margin: 10px 2px 2px;
+  color: var(--text-dim, #7d8590);
+  font: 600 10px/1 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+:root[data-workspace='workstation'] #draw-panel .draw-zone-empty {
+  margin: 8px 2px;
+  color: var(--text-dim, #7d8590);
+  font: 400 12px/1.4 var(--font-sans, system-ui, sans-serif);
+}
+:root[data-workspace='workstation'] #draw-panel .draw-zone-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  overflow: hidden;
+  border: 1px solid var(--dp-line);
+  border-radius: 9px;
+  background: var(--dp-card);
+}
+:root[data-workspace='workstation'] #draw-panel .draw-zone-go {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary, #e6e9ee);
+  font: 500 12px/1.2 var(--font-sans, system-ui, sans-serif);
+  text-align: left;
+  cursor: pointer;
+}
+:root[data-workspace='workstation'] #draw-panel .draw-zone-go:hover {
+  background: rgba(var(--dp-accent-rgb), 0.08);
+}
+:root[data-workspace='workstation'] #draw-panel .draw-zone-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+:root[data-workspace='workstation'] #draw-panel .draw-zone-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:root[data-workspace='workstation'] #draw-panel .draw-zone-kind {
+  flex: none;
+  color: var(--text-dim, #7d8590);
+  font: 600 9px/1 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+:root[data-workspace='workstation'] #draw-panel .draw-zone-remove {
+  border: 0;
+  border-left: 1px solid var(--dp-line);
+  background: transparent;
+  color: var(--text-dim, #7d8590);
+  font-size: 13px;
+  cursor: pointer;
+}
+:root[data-workspace='workstation'] #draw-panel .draw-zone-remove:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ff6b6b;
+}
+
+/* ═══ ROUTE drawer ═══════════════════════════════════════════════════ */
+#route-panel {
+  --rp-line: var(--ws-line, rgba(255, 255, 255, 0.08));
+  --rp-line-strong: var(--ws-line-strong, rgba(255, 255, 255, 0.14));
+  --rp-card: var(--ws-surface-2, #161a20);
+}
+#route-panel .route-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#route-panel .route-help {
+  margin: 0 2px;
+  color: var(--text-dim, #7d8590);
+  font: 400 12px/1.5 var(--font-sans, system-ui, sans-serif);
+}
+#route-panel .route-points {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 40px;
+}
+#route-panel .route-point {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 6px;
+}
+#route-panel .route-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: #0b0d10;
+  font: 700 11px/1 var(--font-mono, ui-monospace, monospace);
+}
+#route-panel .route-point-a .route-badge {
+  background: #4ade80;
+}
+#route-panel .route-point-b .route-badge {
+  background: #ef4444;
+}
+#route-panel .route-input {
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--rp-line-strong);
+  border-radius: 8px;
+  background: var(--ws-surface, #101317);
+  color: var(--text-primary, #e6e9ee);
+  font: 500 12px/1.2 var(--font-sans, system-ui, sans-serif);
+}
+#route-panel .route-input:focus {
+  border-color: rgba(245, 165, 36, 0.7);
+  outline: none;
+}
+#route-panel :is(.route-pick, .route-swap) {
+  height: 34px;
+  border: 1px solid var(--rp-line-strong);
+  border-radius: 8px;
+  background: var(--rp-card);
+  color: var(--text-primary, #e6e9ee);
+  font-size: 16px;
+  cursor: pointer;
+}
+#route-panel .route-pick.active {
+  border-color: #f5a524;
+  background: rgba(245, 165, 36, 0.2);
+  color: #f5a524;
+}
+#route-panel .route-swap {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 32px;
+  transform: translateY(-50%);
+}
+#route-panel :is(.route-modes, .route-speeds) {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid var(--rp-line-strong);
+  border-radius: 8px;
+}
+#route-panel :is(.route-mode, .route-speed) {
+  flex: 1 1 0;
+  min-height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary, #a8b0ba);
+  font: 600 11px/1 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+#route-panel :is(.route-mode, .route-speed) + :is(.route-mode, .route-speed) {
+  border-left: 1px solid var(--rp-line-strong);
+}
+#route-panel :is(.route-mode, .route-speed).active {
+  background: rgba(245, 165, 36, 0.18);
+  color: #f5a524;
+  box-shadow: inset 0 -2px 0 #f5a524;
+}
+#route-panel :is(.route-calc, .route-play) {
+  min-height: 38px;
+  border: 0;
+  border-radius: 8px;
+  background: #f5a524;
+  color: #1a1206;
+  font: 700 12px/1 var(--font-sans, system-ui, sans-serif);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+#route-panel .route-calc:disabled {
+  opacity: 0.5;
+}
+#route-panel .route-status {
+  color: var(--text-secondary, #a8b0ba);
+  font: 500 12px/1.4 var(--font-sans, system-ui, sans-serif);
+}
+#route-panel :is(.route-status, .route-summary)[hidden] {
+  display: none;
+}
+#route-panel .route-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#route-panel .route-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+#route-panel .route-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 9px 10px;
+  border: 1px solid var(--rp-line);
+  border-radius: 8px;
+  background: var(--rp-card);
+}
+#route-panel .route-stat-label {
+  color: var(--text-dim, #7d8590);
+  font: 500 10px/1.2 var(--font-sans, system-ui, sans-serif);
+}
+#route-panel .route-stat-value {
+  color: var(--text-primary, #e6e9ee);
+  font: 600 15px/1.1 var(--font-mono, ui-monospace, monospace);
+}
+#route-panel .route-player {
+  display: grid;
+  grid-template-columns: 1fr 40px auto;
+  gap: 6px;
+}
+#route-panel .route-play.active {
+  background: #38bdf8;
+  color: #04121a;
+}
+#route-panel :is(.route-stop, .route-follow) {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--rp-line-strong);
+  border-radius: 8px;
+  background: var(--rp-card);
+  color: var(--text-primary, #e6e9ee);
+  font: 600 11px/1 var(--font-mono, ui-monospace, monospace);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+#route-panel .route-follow.active {
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
+#route-panel .route-progress-bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(127, 127, 127, 0.25);
+}
+#route-panel .route-progress-fill {
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #f5a524);
+}
+#route-panel .route-progress-text {
+  margin-top: 6px;
+  color: var(--text-secondary, #a8b0ba);
+  font: 500 11px/1.4 var(--font-mono, ui-monospace, monospace);
+}
+#route-panel .route-now {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-left: 3px solid #38bdf8;
+  border-radius: 0 8px 8px 0;
+  background: rgba(56, 189, 248, 0.08);
+}
+#route-panel .route-now:empty {
+  display: none;
+}
+#route-panel .route-now-current {
+  color: var(--text-primary, #e6e9ee);
+  font: 600 12px/1.4 var(--font-sans, system-ui, sans-serif);
+}
+#route-panel .route-now-next {
+  margin-top: 3px;
+  color: var(--text-secondary, #a8b0ba);
+  font: 400 11px/1.4 var(--font-sans, system-ui, sans-serif);
+}
+#route-panel .route-steps-title {
+  margin: 6px 2px 0;
+  color: var(--text-dim, #7d8590);
+  font: 600 10px/1 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+#route-panel .route-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+#route-panel .route-step {
+  padding: 8px 10px;
+  border: 1px solid var(--rp-line);
+  border-radius: 8px;
+  background: var(--rp-card);
+  cursor: pointer;
+}
+#route-panel .route-step:hover {
+  border-color: var(--rp-line-strong);
+}
+#route-panel .route-step.passed {
+  opacity: 0.5;
+}
+#route-panel .route-step.current {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+}
+#route-panel .route-step-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+#route-panel .route-step-text {
+  color: var(--text-primary, #e6e9ee);
+  font: 500 12px/1.35 var(--font-sans, system-ui, sans-serif);
+}
+#route-panel .route-step-at {
+  flex: none;
+  color: #f5a524;
+  font: 600 11px/1.35 var(--font-mono, ui-monospace, monospace);
+}
+#route-panel .route-step-meta {
+  margin-top: 3px;
+  color: var(--text-dim, #7d8590);
+  font: 500 10px/1.2 var(--font-mono, ui-monospace, monospace);
+}
+body.route-picking #cesiumContainer {
+  cursor: crosshair;
+}
+
+/* ── Cockpit PANTALLA popover: the same cards in a narrower column ─────
+   Sub-settings use the full card width (no deep indent) so labels, sliders,
+   values and segmented choices are never cut off. */
+:root[data-workspace] #cockpit-display-panel .pp-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px !important;
+}
+:root[data-workspace] #cockpit-display-panel .pp-slider-mini-label {
+  flex: 0 0 auto;
+  max-width: 48%;
+  overflow: hidden;
+  padding: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:root[data-workspace] #cockpit-display-panel .pp-slider {
+  flex: 1 1 auto;
+  width: auto !important;
+  min-width: 40px;
+}
+:root[data-workspace] #cockpit-display-panel .pp-slider-value {
+  flex: 0 0 auto;
+  min-width: 34px;
+  padding: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+:root[data-workspace] #cockpit-display-panel :is(.pp-mode-seg, .pp-select) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+:root[data-workspace] #cockpit-display-panel .pp-mode-btn {
+  min-width: 0;
+  padding: 4px 6px;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+:root[data-workspace] #cockpit-display-panel .pp-toggle-btn {
+  padding: 10px 12px;
+  column-gap: 10px;
+}
+:root[data-workspace] #cockpit-display-panel .pp-desc {
+  display: -webkit-box;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* DRAW drawer: label and colour use the full card width; Save sits next to
+   the colour, Clear after it. */
+:root[data-workspace='workstation'] #draw-panel #draw-label-row {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 14px !important;
+}
+:root[data-workspace='workstation'] #draw-panel #draw-label-row .pp-text-input {
+  flex: 1 1 100%;
+  width: 100%;
+  height: 38px;
+  font-size: 12px;
+}
+:root[data-workspace='workstation']
+  #draw-panel
+  #draw-label-row
+  .draw-color-select {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 38px;
+}
+:root[data-workspace='workstation']
+  #draw-panel
+  #draw-label-row
+  :is(.draw-save-btn, .draw-clear-btn) {
+  flex: 0 0 auto;
+  min-width: 86px;
+  height: 38px;
+  border: 1px solid var(--dp-line-strong);
+  border-radius: 7px;
+}
+:root[data-workspace='workstation'] #draw-panel #draw-label-row .draw-save-btn {
+  border-color: var(--dp-accent);
+  background: var(--dp-accent);
+  color: #1a1206;
+}
+:root[data-workspace='workstation']
+  #draw-panel
+  #draw-label-row
+  .draw-save-btn:hover {
+  filter: brightness(1.08);
+}
+:root[data-workspace='workstation'] #draw-panel #draw-label-row .draw-hint {
+  flex-basis: 100%;
+}
+
+/* Sub-settings span the whole card: segmented choices never truncate. */
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-slider-row
+  .pp-mode-btn {
+  min-width: 0;
+  overflow: visible;
+  padding: 4px 6px;
+  letter-spacing: 0.04em;
+  text-overflow: clip;
+}
+:root[data-workspace='workstation']
+  :is(#pp-toggles, #draw-panel, #cockpit-display-panel)
+  .pp-slider-row
+  .pp-slider-mini-label {
+  flex: 0 0 auto;
+  min-width: 76px;
+}

@@ -1,0 +1,24 @@
+{
+  "generatedAt": "2026-10-01T05:10:49.773Z",
+  "dataset": "volcanoes",
+  "file": "volcanoes.geojsonl",
+  "source": "Wikidata (fallback; GVP WFS unavailable)",
+  "url": "https://query.wikidata.org/sparql",
+  "license": "CC0 1.0",
+  "fallbackReason": "fetch failed",
+  "count": 2522,
+  "invalid": 37,
+  "bytes": 828275,
+  "sha256": "afba76c2823f8d3caba5739596030fccb31c93f6dcf5d42ac9367177c760d91a",
+  "classes": {
+    "volcano_mud": 19,
+    "volcano_stratovolcano": 357,
+    "volcano": 1700,
+    "volcano_cone": 175,
+    "volcano_shield": 97,
+    "volcano_caldera": 26,
+    "volcano_dome": 56,
+    "volcano_submarine": 75,
+    "volcano_field": 17
+  }
+}
