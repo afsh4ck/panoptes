@@ -4,7 +4,7 @@
 
 # PANOPTES
 
-### Every signal. One globe.
+### The eyes that see everything.
 
 **An open-source geospatial intelligence console.** Live aircraft, ships and
 satellites, conflict and disaster events, military bases, nuclear sites and
@@ -600,6 +600,6 @@ product of a similar name.
 
 <div align="center">
 
-**PANOPTES. Every signal. One globe.**
+**PANOPTES. The eyes that see everything.**
 
 </div>

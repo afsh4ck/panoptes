@@ -27,8 +27,8 @@
     'nav.gallery': 'Gallery',
     'nav.install': 'Install',
     'hero.pill': 'Open source · MIT · runs on your machine',
-    'hero.title1': 'Every signal.',
-    'hero.title2': 'One globe.',
+    'hero.title1': 'The eyes that',
+    'hero.title2': 'see everything.',
     'hero.sub':
       'PANOPTES is an open-source intelligence console: flights, ships, satellites, public cameras, military bases, nuclear sites and critical infrastructure on one photorealistic 3D globe. No accounts, no third-party servers, no black boxes.',
     'hero.cta1': 'View on GitHub',
@@ -210,7 +210,7 @@
       'Clone it, start it and see the planet like never before. If you like it, a star helps more people find it.',
     'fin.cta': 'Give it a star',
     'fin.cta2': 'Install',
-    'foot.p': 'Every signal. One globe. · MIT License',
+    'foot.p': 'The eyes that see everything. · MIT License',
   };
   var nodes = Array.prototype.slice.call(
     document.querySelectorAll('[data-i18n]'),
