@@ -211,6 +211,7 @@
     'fin.cta': 'Give it a star',
     'fin.cta2': 'Install',
     'foot.p': 'The eyes that see everything. · MIT License',
+    'foot.by': 'Developed by',
   };
   var nodes = Array.prototype.slice.call(
     document.querySelectorAll('[data-i18n]'),

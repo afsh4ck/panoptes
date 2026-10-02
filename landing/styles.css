@@ -1482,3 +1482,15 @@ pre {
     display: none;
   }
 }
+
+.foot-by {
+  color: var(--text-faint);
+  font-size: 12px;
+}
+.foot-by a {
+  color: var(--amber);
+  font-weight: 600;
+}
+.foot-by a:hover {
+  text-decoration: underline;
+}
