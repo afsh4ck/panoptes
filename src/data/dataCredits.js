@@ -338,6 +338,12 @@ export const DATA_CREDITS = [
     html: 'Webcam (Warendorf): <a href="https://www.warendorf.de/" target="_blank" rel="noopener">Stadt Warendorf</a> (courtesy)',
   },
   {
+    key: 'madrid-cctv',
+    html:
+      'CCTV cameras &amp; frames (Madrid): Ayuntamiento de Madrid — ' +
+      '<a href="https://informo.madrid.es/" target="_blank" rel="noopener">informo.madrid.es</a> (courtesy)',
+  },
+  {
     key: 'nsw-cctv',
     html:
       'CCTV cameras &amp; frames (New South Wales): ' +

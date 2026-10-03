@@ -10,6 +10,7 @@ import {
   loadIowaSourcesFromOpenData,
   loadHongKongSourcesFromOpenData,
   loadNztaSourcesFromOpenData,
+  loadMadridSourcesFromInformo,
 } from './packs.js';
 import { allocateSourceCap, resolveCatalogCap } from './cap.js';
 import { loadGroundHeights, joinGroundHeights } from './groundHeights.js';
@@ -149,6 +150,11 @@ const LIVE_PACKS = [
     name: 'nzta',
     enabled: () => envEnabled('CCTV_NZTA_ENABLED'),
     load: loadNztaSourcesFromOpenData,
+  },
+  {
+    name: 'madrid',
+    enabled: () => envEnabled('CCTV_MADRID_ENABLED'),
+    load: loadMadridSourcesFromInformo,
   },
 ];
 /**

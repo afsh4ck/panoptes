@@ -471,6 +471,34 @@ export const NZTA_ANCHORS = [
   { lat: -43.5321, lon: 172.6362 }, // Christchurch
 ];
 
+/** City of Madrid traffic cameras (Informo, Ayuntamiento de Madrid, keyless). */
+export const MADRID_CAMERAS_URL =
+  'https://informo.madrid.es/informo/tmadrid/CCTV.kml';
+export const MADRID_IMAGE_ORIGIN = 'https://informo.madrid.es/cameras/';
+export const DEFAULT_MADRID_MAX_SOURCES = 400;
+export const MADRID_CENTER = { lat: 40.4168, lon: -3.7038 };
+/**
+ * Surveyed poses for central Madrid cameras (heading read from the frame:
+ * the direction the street recedes in the picture). Every other camera keeps
+ * the low-confidence prior until it is surveyed.
+ */
+export const MADRID_CAMERA_POSES = Object.freeze({
+  '01314': {
+    headingDeg: 105,
+    pitchDeg: -16,
+    fovDeg: 62,
+    rangeM: 230,
+    mountHeightM: 14,
+  },
+  '01335': {
+    headingDeg: 170,
+    pitchDeg: -14,
+    fovDeg: 56,
+    rangeM: 160,
+    mountHeightM: 9,
+  },
+});
+
 /** One identifying User-Agent for the catalog fetches added by PANOPTES. */
 export const PANOPTES_CCTV_USER_AGENT =
   'PanoptesOSINT/0.1 (+https://github.com/bilawalsidhu/gods-eye-view)';

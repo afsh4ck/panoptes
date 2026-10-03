@@ -5,6 +5,7 @@ import {
   iowaFeatureToSource,
   nztaFeatureToSource,
   parseHongKongCameras,
+  parseMadridCameras,
   parseWktPoint,
   safeHlsUrl,
   packCap,
@@ -221,4 +222,28 @@ test('catalog ceiling admits the larger PANOPTES catalog', () => {
   assert.equal(packCap('GA511', 2500), 2500);
   if (previous === undefined) delete process.env.CCTV_GA511_MAX_SOURCES;
   else process.env.CCTV_GA511_MAX_SOURCES = previous;
+});
+
+test('Madrid Informo KML parses into pinned still-frame cameras with surveyed poses', () => {
+  const kml = `<kml><Document>
+    <Placemark><description>&lt;img src=https://informo.madrid.es/cameras/Camara01314.jpg?v=22060 /&gt;</description>
+      <ExtendedData><Data name="Numero"><Value>01314</Value></Data><Data name="Nombre"><Value>CALLAO - GRAN VIA</Value></Data></ExtendedData>
+      <Point><coordinates>-3.70549647487068,40.4201376524201,10 </coordinates></Point></Placemark>
+    <Placemark><ExtendedData><Data name="Numero"><Value>06303</Value></Data><Data name="Nombre"><Value>PLAZA DE CASTILLA (NORTE)</Value></Data></ExtendedData>
+      <Point><coordinates>-3.68894207537291,40.466063829633,10 </coordinates></Point></Placemark>
+    <Placemark><ExtendedData><Data name="Numero"><Value>../x</Value></Data></ExtendedData>
+      <Point><coordinates>-3.7,40.4,0</coordinates></Point></Placemark>
+    <Placemark><ExtendedData><Data name="Numero"><Value>99999</Value></Data></ExtendedData>
+      <Point><coordinates>2.17,41.38,0</coordinates></Point></Placemark>
+  </Document></kml>`;
+  const cameras = parseMadridCameras(kml);
+  assert.equal(cameras.length, 2);
+  const callao = cameras[0];
+  assert.equal(callao.id, 'madrid-01314');
+  assert.equal(callao.name, 'Callao - Gran Via');
+  assert.equal(callao.url, 'https://informo.madrid.es/cameras/Camara01314.jpg');
+  assert.equal(callao.headingDeg, 105);
+  assert.equal(callao.headingConfidence, 'high');
+  assert.equal(cameras[1].name, 'Plaza de Castilla (Norte)');
+  assert.equal(cameras[1].headingConfidence, 'low');
 });

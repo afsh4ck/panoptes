@@ -1,5 +1,10 @@
 # Changelog
 
+- Add the City of Madrid traffic cameras (Informo, Ayuntamiento de Madrid): about
+  357 public cameras from the keyless KML, still frames refreshed about every
+  three minutes, with surveyed poses for Callao (01314) and San Bernardo (01335)
+  on Gran Vía. `CCTV_MADRID_ENABLED=0` turns the pack off and
+  `CCTV_MADRID_MAX_SOURCES` caps it.
 - Public Overpass instances are no longer used by default. Street Traffic
   roads come from TomTom flow tiles, OpenFreeMap vector tiles, or both, chosen
   on the layer row (TomTom / OSM / Hybrid) or with `?trafficRoads=`. With a

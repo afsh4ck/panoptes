@@ -1,8 +1,8 @@
 /**
  * Camera packs added by PANOPTES: public 511 traveler-information sites on the
  * IBI platform (Georgia, Florida, Pennsylvania, Arizona, Nevada, Louisiana,
- * Idaho, Alaska, New England), Iowa DOT, Hong Kong Transport Department and
- * Waka Kotahi NZTA. Every source here is a camera its operator publishes to
+ * Idaho, Alaska, New England), Iowa DOT, Hong Kong Transport Department,
+ * Waka Kotahi NZTA and the City of Madrid (Informo). Every source here is a camera its operator publishes to
  * the public; nothing is discovered by scanning.
  *
  * Each loader returns already-prioritized source records in the shape the
@@ -26,6 +26,11 @@ import {
   NZTA_IMAGE_ORIGIN,
   DEFAULT_NZTA_MAX_SOURCES,
   NZTA_ANCHORS,
+  MADRID_CAMERAS_URL,
+  MADRID_IMAGE_ORIGIN,
+  DEFAULT_MADRID_MAX_SOURCES,
+  MADRID_CENTER,
+  MADRID_CAMERA_POSES,
   CCTV_SOURCE_FETCH_TIMEOUT_MS,
   PANOPTES_CCTV_USER_AGENT,
 } from './constants.js';
@@ -448,6 +453,112 @@ export async function loadNztaSourcesFromOpenData() {
     return prioritized;
   } catch (error) {
     console.warn('[CCTV] NZTA download error:', error?.message || error);
+    return [];
+  }
+}
+
+/** Decode the handful of XML entities the Informo KML uses in names. */
+function decodeXmlText(text) {
+  return String(text || '')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&amp;/g, '&')
+    .trim();
+}
+
+/** "PLAZA DE CASTILLA (NORTE)" → "Plaza de Castilla (Norte)". */
+function madridTitleCase(name) {
+  const small = new Set(['de', 'del', 'la', 'las', 'el', 'los', 'y', 'a']);
+  return name
+    .toLowerCase()
+    .split(/(\s+|-|\()/)
+    .map((word, index) =>
+      index > 0 && small.has(word)
+        ? word
+        : word.charAt(0).toUpperCase() + word.slice(1),
+    )
+    .join('');
+}
+
+/**
+ * Parse the City of Madrid Informo CCTV KML into still-frame cameras. Frames
+ * are rebuilt from the camera number and pinned to informo.madrid.es; the
+ * cache-busting `?v=` the KML carries is dropped.
+ * @param {string} kml
+ */
+export function parseMadridCameras(kml) {
+  const cameras = [];
+  const seen = new Set();
+  for (const match of String(kml || '').matchAll(
+    /<Placemark>([\s\S]*?)<\/Placemark>/g,
+  )) {
+    const block = match[1];
+    const number = (/<Data name="Numero">\s*<Value>([^<]*)<\/Value>/.exec(
+      block,
+    ) || [])[1]?.trim();
+    if (!/^\d{3,6}$/.test(number || '') || seen.has(number)) continue;
+    const coords = (/<coordinates>([^<]*)<\/coordinates>/.exec(block) || [])[1];
+    const [lon, lat] = String(coords || '')
+      .trim()
+      .split(',')
+      .map(Number);
+    if (!isPlausibleLatLon(lat, lon)) continue;
+    if (lat < 40.2 || lat > 40.65 || lon < -3.95 || lon > -3.45) continue;
+    const rawName = decodeXmlText(
+      (/<Data name="Nombre">\s*<Value>([^<]*)<\/Value>/.exec(block) || [])[1],
+    );
+    seen.add(number);
+    const cameraId = `madrid-${number}`;
+    const frameUrl = `${MADRID_IMAGE_ORIGIN}Camara${number}.jpg`;
+    const surveyed = MADRID_CAMERA_POSES[number];
+    cameras.push({
+      id: cameraId,
+      name: rawName ? madridTitleCase(rawName) : `Madrid camera ${number}`,
+      city: 'Madrid',
+      cityId: 'madrid',
+      provider: 'Ayuntamiento de Madrid',
+      lat,
+      lon,
+      ...(surveyed
+        ? { ...surveyed, headingConfidence: 'high' }
+        : posePrior(cameraId, NaN)),
+      groundElevationM: 655,
+      feedType: 'image',
+      url: frameUrl,
+      snapshotUrl: frameUrl,
+      sourceKind: 'madrid-informo',
+      license:
+        'Ayuntamiento de Madrid · informo.madrid.es (cámaras de tráfico públicas)',
+    });
+  }
+  return cameras;
+}
+
+export async function loadMadridSourcesFromInformo() {
+  try {
+    const response = await fetch(MADRID_CAMERAS_URL, {
+      headers: { 'User-Agent': PANOPTES_CCTV_USER_AGENT },
+      signal: AbortSignal.timeout(CCTV_SOURCE_FETCH_TIMEOUT_MS),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const kml = await readResponseTextCapped(response, 4 * MB);
+    const cameras = parseMadridCameras(kml);
+    const prioritized = prioritizeSources(
+      cameras,
+      packCap('MADRID', DEFAULT_MADRID_MAX_SOURCES, 1000),
+      [MADRID_CENTER],
+    );
+    console.log(
+      `[CCTV] Loaded Madrid Informo cameras: ${cameras.length} (using ${prioritized.length})`,
+    );
+    return prioritized;
+  } catch (error) {
+    console.warn(
+      '[CCTV] Madrid Informo download error:',
+      error?.message || error,
+    );
     return [];
   }
 }
