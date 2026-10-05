@@ -22,3 +22,7 @@ pinokio/.installed
 
 # Local knowledge-graph build output (graphify)
 graphify-out/
+
+# Landing (panoptes-osint.vercel.app): lives only on the local machine and
+# deploys with the Vercel CLI from landing/; it is not part of the repository.
+/landing/
