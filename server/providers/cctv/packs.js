@@ -3,7 +3,7 @@
  * IBI platform (Georgia, Florida, Pennsylvania, Arizona, Nevada, Louisiana,
  * Idaho, Alaska, New England, North Carolina, Connecticut and eight Canadian
  * provinces and territories), Iowa DOT, Hong Kong Transport Department,
- * Waka Kotahi NZTA, Vegagerðin (Iceland), QLDTraffic (Queensland), the City of
+ * Waka Kotahi NZTA, 511NY (NYSDOT live video, NYC DOT), Vegagerðin (Iceland), QLDTraffic (Queensland), the City of
  * Madrid (Informo) and Spain's road cameras:
  * DGT nationwide, the Servei Català de Trànsit (with Barcelona and Terrassa),
  * Open Data Euskadi, and the city and regional feeds in SPAIN_CITY_SITES
@@ -31,6 +31,13 @@ import {
   NZTA_IMAGE_ORIGIN,
   DEFAULT_NZTA_MAX_SOURCES,
   NZTA_ANCHORS,
+  NY511_CAMERAS_URL,
+  NY511_STREAM_HOST_PATTERN,
+  NY511_PREVIEW_ORIGIN,
+  NYC_DOT_IMAGE_PATTERN,
+  DEFAULT_NY511_MAX_SOURCES,
+  NY511_BOUNDS,
+  NY511_ANCHORS,
   ICELAND_CAMERAS_URL,
   ICELAND_IMAGE_ORIGIN,
   DEFAULT_ICELAND_MAX_SOURCES,
@@ -500,6 +507,113 @@ export async function loadNztaSourcesFromOpenData() {
     return prioritized;
   } catch (error) {
     console.warn('[CCTV] NZTA download error:', error?.message || error);
+    return [];
+  }
+}
+
+/**
+ * One 511NY camera GeoJSON feature → camera source, or null. NYSDOT views
+ * ("WMP") become live HLS with their preview as the still frame; NYC DOT
+ * views ("STILL_IMAGE") stay frames. Hosts are pinned per owner.
+ * @param {object} feature
+ */
+export function ny511FeatureToSource(feature) {
+  const p = feature?.properties || {};
+  if (p.public === false) return null;
+  const view = (Array.isArray(p.views) ? p.views : []).find(
+    (candidate) => candidate && !candidate.broken,
+  );
+  if (!view) return null;
+  const id = Number(p.id);
+  if (!Number.isInteger(id) || id <= 0) return null;
+  const [lon, lat] = Array.isArray(feature?.geometry?.coordinates)
+    ? feature.geometry.coordinates.map(Number)
+    : [];
+  if (!isPlausibleLatLon(lat, lon) || !inBounds(lat, lon, NY511_BOUNDS))
+    return null;
+  const cameraId = `ny511-${id}`;
+  const name = String(p.name || view.name || '').trim() || `511NY camera ${id}`;
+  const base = {
+    id: cameraId,
+    name,
+    lat,
+    lon,
+    ...posePrior(cameraId, directionToHeading(name)),
+    sourceKind: 'ny511',
+  };
+  if (view.type === 'STILL_IMAGE') {
+    const frameUrl = String(view.url || '').trim();
+    if (!NYC_DOT_IMAGE_PATTERN.test(frameUrl)) return null;
+    return {
+      ...base,
+      city: 'New York City',
+      cityId: 'ny511-nyc',
+      provider: 'NYC DOT (511NY)',
+      groundElevationM: 10,
+      feedType: 'image',
+      url: frameUrl,
+      snapshotUrl: frameUrl,
+      license: 'Public NYC DOT traffic camera via 511NY',
+    };
+  }
+  const stream = safeHlsUrl(view.url, (url) =>
+    NY511_STREAM_HOST_PATTERN.test(url.hostname),
+  );
+  const preview = String(view.videoPreviewUrl || '').trim();
+  if (!stream || !preview.startsWith(NY511_PREVIEW_ORIGIN)) return null;
+  return {
+    ...base,
+    city: String(p.route || 'New York State'),
+    cityId: 'ny511',
+    provider: 'NYSDOT (511NY)',
+    groundElevationM: 60,
+    feedType: 'hls',
+    url: stream,
+    snapshotUrl: preview,
+    live: true,
+    license: 'Public NYSDOT traffic camera via 511NY',
+  };
+}
+
+/** One 511NY download serves both packs (NYSDOT and NYC DOT) of a refresh. */
+let ny511Pending = null;
+function fetchNy511Cameras() {
+  if (!ny511Pending) {
+    ny511Pending = fetchJson(NY511_CAMERAS_URL, 8 * MB).then((payload) => {
+      const features = Array.isArray(payload?.features) ? payload.features : [];
+      const cameras = features.map(ny511FeatureToSource).filter(Boolean);
+      return [...new Map(cameras.map((c) => [c.id, c])).values()];
+    });
+    const clear = () => setTimeout(() => (ny511Pending = null), 60 * 1000);
+    ny511Pending.then(clear, () => (ny511Pending = null));
+  }
+  return ny511Pending;
+}
+
+/**
+ * 511NY cameras of one owner. NYSDOT (live video) and NYC DOT (stills) are
+ * separate packs so the catalog cap and the reachability probe treat them
+ * apart: NYC DOT frames often answer only inside the United States.
+ * @param {'nysdot'|'nycdot'} owner
+ */
+export async function loadNy511Sources(owner = 'nysdot') {
+  const nyc = owner === 'nycdot';
+  const label = nyc ? 'NYC DOT (511NY)' : 'NYSDOT (511NY)';
+  try {
+    const cameras = (await fetchNy511Cameras()).filter(
+      (camera) => (camera.cityId === 'ny511-nyc') === nyc,
+    );
+    const prioritized = prioritizeSources(
+      cameras,
+      packCap(nyc ? 'NYCDOT' : 'NY511', DEFAULT_NY511_MAX_SOURCES, 5000),
+      NY511_ANCHORS,
+    );
+    console.log(
+      `[CCTV] Loaded ${label} cameras: ${cameras.length}, ${cameras.filter((c) => c.live).length} live (using ${prioritized.length})`,
+    );
+    return prioritized;
+  } catch (error) {
+    console.warn(`[CCTV] ${label} download error:`, error?.message || error);
     return [];
   }
 }

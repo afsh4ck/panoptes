@@ -11,6 +11,7 @@ import {
   loadIowaSourcesFromOpenData,
   loadHongKongSourcesFromOpenData,
   loadNztaSourcesFromOpenData,
+  loadNy511Sources,
   loadIcelandSourcesFromVegagerdin,
   loadQldSourcesFromQldTraffic,
   loadMadridSourcesFromInformo,
@@ -156,6 +157,16 @@ const LIVE_PACKS = [
     name: 'nzta',
     enabled: () => envEnabled('CCTV_NZTA_ENABLED'),
     load: loadNztaSourcesFromOpenData,
+  },
+  {
+    name: 'ny511',
+    enabled: () => envEnabled('CCTV_NY511_ENABLED'),
+    load: () => loadNy511Sources('nysdot'),
+  },
+  {
+    name: 'nycdot',
+    enabled: () => envEnabled('CCTV_NYCDOT_ENABLED'),
+    load: () => loadNy511Sources('nycdot'),
   },
   {
     name: 'iceland',

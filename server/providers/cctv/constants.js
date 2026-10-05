@@ -13,7 +13,7 @@ export const DEFAULT_AUSTIN_MAX_SOURCES = 250;
  * sites) are thinned to an equal share; every other pack, the Spanish ones
  * included, loads whole.
  */
-export const DEFAULT_CCTV_MAX_SOURCES = 21500;
+export const DEFAULT_CCTV_MAX_SOURCES = 26500;
 /** Hard upper bound for CCTV_MAX_SOURCES; also sizes the health map. Billboards
  * share one collection and coverage geometry is built only for the visible
  * set, so the client stays responsive at this size. */
@@ -622,6 +622,31 @@ export const NZTA_ANCHORS = [
   { lat: -36.8485, lon: 174.7633 }, // Auckland
   { lat: -41.2865, lon: 174.7762 }, // Wellington
   { lat: -43.5321, lon: 172.6362 }, // Christchurch
+];
+
+/** 511NY (New York State DOT, on the CARS platform since 2026): the keyless
+ * GeoJSON the 511ny.org map loads. NYSDOT cameras carry an open HLS stream on
+ * sN.nysdot.skyvdn.com plus a preview still on public.carsprogram.org; NYC DOT
+ * cameras are stills on nyctmc.org. */
+export const NY511_CAMERAS_URL =
+  'https://api-511x-nysdot.carsprogram.org/cameras/map-features';
+export const NY511_STREAM_HOST_PATTERN = /^s\d{1,3}\.nysdot\.skyvdn\.com$/;
+export const NY511_PREVIEW_ORIGIN = 'https://public.carsprogram.org/cameras/';
+export const NYC_DOT_IMAGE_PATTERN =
+  /^https:\/\/nyctmc\.org\/api\/cameras\/[0-9a-f-]{36}\/image$/i;
+export const DEFAULT_NY511_MAX_SOURCES = 2800;
+export const NY511_BOUNDS = Object.freeze({
+  south: 40.4,
+  west: -79.9,
+  north: 45.1,
+  east: -71.7,
+});
+export const NY511_ANCHORS = [
+  { lat: 40.7128, lon: -74.006 }, // New York City
+  { lat: 42.8864, lon: -78.8784 }, // Buffalo
+  { lat: 42.6526, lon: -73.7562 }, // Albany
+  { lat: 43.1566, lon: -77.6088 }, // Rochester
+  { lat: 43.0481, lon: -76.1474 }, // Syracuse
 ];
 
 /** Vegagerðin (Icelandic Road and Coastal Administration) road webcams: keyless

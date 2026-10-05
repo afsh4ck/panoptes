@@ -1,5 +1,9 @@
 # Changelog
 
+- Cameras: New York through 511NY. About 1,750 NYSDOT cameras play live
+  video through the server relay and about 970 NYC DOT cameras show stills
+  (hidden automatically where nyctmc.org does not answer). The default
+  catalog cap rises to 26,500 so no pack is thinned.
 - Cameras: about 2,500 more official cameras. North Carolina (DriveNC),
   Connecticut (CTroads) and eight Canadian 511 sites (Alberta,
   Saskatchewan, Manitoba, Nova Scotia, New Brunswick, Newfoundland and

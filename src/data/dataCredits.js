@@ -356,6 +356,12 @@ export const DATA_CREDITS = [
       'photos from <a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons</a> under each file\'s licence',
   },
   {
+    key: 'ny511-cctv',
+    html:
+      'CCTV cameras, live video &amp; frames (New York): ' +
+      '<a href="https://www.511ny.org/" target="_blank" rel="noopener">511NY</a> — NYSDOT and NYC DOT',
+  },
+  {
     key: 'iceland-cctv',
     html:
       'CCTV cameras &amp; frames (Iceland): ' +

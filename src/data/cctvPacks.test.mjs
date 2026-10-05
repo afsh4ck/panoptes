@@ -8,6 +8,7 @@ import {
   icelandCaptionHeading,
   icelandCameraToSource,
   qldWebcamToSource,
+  ny511FeatureToSource,
   parseHongKongCameras,
   parseMadridCameras,
   parseDgtCameras,
@@ -733,4 +734,72 @@ test('QLDTraffic webcams face their published direction', () => {
     }),
     null,
   );
+});
+
+test('511NY: NYSDOT views go live on skyvdn, NYC DOT stays frames on nyctmc', () => {
+  // Trimmed from https://api-511x-nysdot.carsprogram.org/cameras/map-features (2026-10-05).
+  const nysdot = {
+    geometry: { coordinates: [-73.49075757290815, 40.70016272957286] },
+    properties: {
+      id: 32768,
+      name: 'SSP at NY135 (Crown Castle) - 1',
+      public: true,
+      route: 'NY 135',
+      cameraOwner: 'NYSDOT',
+      views: [
+        {
+          type: 'WMP',
+          url: 'https://s7.nysdot.skyvdn.com/rtplive/R10_384/playlist.m3u8',
+          videoPreviewUrl:
+            'https://public.carsprogram.org/cameras/NYSDOT/R10_384.flv.png',
+          broken: false,
+        },
+      ],
+    },
+  };
+  const live = ny511FeatureToSource(nysdot);
+  assert.equal(live.id, 'ny511-32768');
+  assert.equal(live.feedType, 'hls');
+  assert.equal(live.live, true);
+  assert.equal(live.cityId, 'ny511');
+  assert.equal(
+    live.snapshotUrl,
+    'https://public.carsprogram.org/cameras/NYSDOT/R10_384.flv.png',
+  );
+  const nyc = ny511FeatureToSource({
+    geometry: { coordinates: [-73.969353, 40.785302] },
+    properties: {
+      id: 20930,
+      name: 'Central Park West @ 86 St',
+      public: true,
+      cameraOwner: 'NYC DOT',
+      views: [
+        {
+          type: 'STILL_IMAGE',
+          url: 'https://nyctmc.org/api/cameras/8a6bc417-4877-4ebe-8052-88c1b261baf1/image',
+          broken: false,
+        },
+      ],
+    },
+  });
+  assert.equal(nyc.feedType, 'image');
+  assert.equal(nyc.cityId, 'ny511-nyc');
+  assert.equal(nyc.provider, 'NYC DOT (511NY)');
+  const view = nysdot.properties.views[0];
+  const variant = (patch, props = {}) =>
+    ny511FeatureToSource({
+      ...nysdot,
+      properties: {
+        ...nysdot.properties,
+        ...props,
+        views: [{ ...view, ...patch }],
+      },
+    });
+  assert.equal(
+    variant({ url: 'https://evil.example.com/a/playlist.m3u8' }),
+    null,
+  );
+  assert.equal(variant({ videoPreviewUrl: 'https://example.com/p.png' }), null);
+  assert.equal(variant({ broken: true }), null);
+  assert.equal(variant({}, { public: false }), null);
 });

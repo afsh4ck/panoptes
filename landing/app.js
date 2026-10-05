@@ -64,7 +64,7 @@
     'f5.t': 'Strategic layers',
     'f5.p':
       'Military bases, nuclear sites, power plants, ports, airports, volcanoes and chokepoints, filterable by type.',
-    'f6.t': '21,000 public cameras',
+    'f6.t': '25,000 public cameras',
     'f6.p':
       'Official traffic and city cameras only, projected into the 3D city, with a live-video filter.',
     'f7.t': 'Route A → B',
@@ -135,7 +135,7 @@
     's7.b3': 'Optional Cyber theme, orange by default',
     's9.t': 'See the street through public cameras',
     's9.p':
-      'More than 21,000 official traffic and city cameras, published by their operators. Pick one and PANOPTES projects its picture into the 3D city, with its field of view, while live traffic flows through the streets.',
+      'More than 25,000 official traffic and city cameras, published by their operators. Pick one and PANOPTES projects its picture into the 3D city, with its field of view, while live traffic flows through the streets.',
     's9.b1': 'Live-video filter and search by city or street',
     's9.b2': 'Nearest camera to any point on the map',
     's9.b3': 'Only intentionally published cameras, never private ones',
@@ -248,7 +248,7 @@
     'Estrechos marítimos': 'Maritime chokepoints',
     'Datacenters · presas · cables': 'Datacenters · dams · cables',
     'Cámaras públicas': 'Public cameras',
-    '21.000': '21,000',
+    '25.000': '25,000',
     'Cámaras ALPR': 'ALPR cameras',
     'Imágenes recientes': 'Recent imagery',
     Viento: 'Wind',

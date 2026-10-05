@@ -385,5 +385,5 @@ test('CCTV_CALGARY_ENABLED=0 keeps the lane from being loaded at all', async (t)
 });
 
 test('the shipped catalog ceiling was raised deliberately for the expanded camera packs', () => {
-  assert.equal(DEFAULT_CCTV_MAX_SOURCES, 21500);
+  assert.equal(DEFAULT_CCTV_MAX_SOURCES, 26500);
 });
