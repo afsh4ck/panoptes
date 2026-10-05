@@ -1,6 +1,12 @@
 import { CCTV_AMBIENT_CARD_MAX } from '../../data/cctvLod.js';
 import { ACTIVE_FRAME_REFRESH_MS, IDLE_FRAME_REFRESH_MS } from './policy.js';
 import { headingHudToken, isHeadingEstimated } from './headingConfidence.js';
+import { frameFreshnessLabel } from './freshness.js';
+
+/** Window for notifyListenersSoon(). */
+const SOON_NOTIFY_MS = 250;
+/** Notification options for background bursts (see uiState). */
+const BACKGROUND = Object.freeze({ reuseCameraList: true });
 
 export function createPresentation({
   state: layerState,
@@ -48,6 +54,7 @@ export function createPresentation({
       health?.sourceKind
         ? `SRC ${String(health.sourceKind).toUpperCase()}`
         : `SRC ${String(active.camera.feedType || 'image').toUpperCase()}`,
+      frameFreshnessLabel(health?.frameTime, health?.frozen) || null,
       `${viewBand.toUpperCase()} CONTEXT`,
     ]
       .filter(Boolean)
@@ -63,8 +70,19 @@ export function createPresentation({
    */
 
   function getPublicCameraState(record, activeId = null) {
-    const resolvedActiveId =
-      activeId || parts.selection.getActiveRecord()?.camera.id || null;
+    return publicCameraState(
+      record,
+      activeId || parts.selection.getActiveRecord()?.camera.id || null,
+    );
+  }
+
+  /**
+   * getPublicCameraState with the active id already resolved. uiState() maps
+   * the whole catalog (~18,000 cameras) on every notification while list
+   * consumers read only identity and feed fields, so the copied and derived
+   * fields are getters, built when read.
+   */
+  function publicCameraState(record, resolvedActiveId) {
     const camera = record.camera;
     const health = layerState._healthById.get(camera.id) || null;
     const isActive = camera.id === resolvedActiveId;
@@ -83,7 +101,9 @@ export function createPresentation({
       // "is this a synthetic guess" bit (calibration-aware), so UI consumers
       // never have to re-derive it.
       headingConfidence: camera.headingConfidence || null,
-      headingEstimated: isHeadingEstimated(camera),
+      get headingEstimated() {
+        return isHeadingEstimated(camera);
+      },
       pitchDeg: camera.pitchDeg,
       fovDeg: camera.fovDeg,
       rangeM: camera.rangeM,
@@ -101,9 +121,16 @@ export function createPresentation({
       sourceStatus: health?.status || 'unknown',
       sourceMessage: health?.message || '',
       sourceLabel: health?.label || camera.provider || '',
+      frameTime: health?.frameTime ?? null,
+      frameFrozen: health?.frozen === true,
+      get frameFreshness() {
+        return frameFreshnessLabel(health?.frameTime, health?.frozen);
+      },
       credit: camera.credit || '',
-      calibration: {
-        ...parts.calibration.normalizeCalibration(camera.calibration),
+      get calibration() {
+        return {
+          ...parts.calibration.normalizeCalibration(camera.calibration),
+        };
       },
       // Save-gated persistence (design §3e): true while the live pose carries
       // edits that have not been SAVEd (or RESET). Drives the CAL · EDITED chip.
@@ -121,16 +148,32 @@ export function createPresentation({
       groundPriorM: Number.isFinite(record.groundPrior?.ellipsoid)
         ? record.groundPrior.ellipsoid
         : null,
-      intrinsics: camera.intrinsics ? { ...camera.intrinsics } : null,
-      extrinsics: camera.extrinsics ? { ...camera.extrinsics } : null,
-      anchor: camera.anchor ? { ...camera.anchor } : null,
+      get intrinsics() {
+        return camera.intrinsics ? { ...camera.intrinsics } : null;
+      },
+      get extrinsics() {
+        return camera.extrinsics ? { ...camera.extrinsics } : null;
+      },
+      get anchor() {
+        return camera.anchor ? { ...camera.anchor } : null;
+      },
       // Panel-only trust signal (design §3b, amended by LOCKED §9.2/§9.3): no
       // in-world rendering reads this, no score-based quality math backs it.
-      calBadge: parts.calibration.deriveCalBadge(camera),
+      get calBadge() {
+        return parts.calibration.deriveCalBadge(camera);
+      },
       poseSource: camera.poseSource || null,
-      basePose: camera.basePose ? { ...camera.basePose } : null,
-      frameUrl: parts.frames.frameUrlFor(camera, refreshMs),
-      mediaUrl: parts.frames.mediaUrlFor(camera),
+      get basePose() {
+        return camera.basePose ? { ...camera.basePose } : null;
+      },
+      // Built on read: every state notification maps the whole catalog
+      // (~18,000 cameras) and only the active camera's URLs are ever used.
+      get frameUrl() {
+        return parts.frames.frameUrlFor(camera, refreshMs);
+      },
+      get mediaUrl() {
+        return parts.frames.mediaUrlFor(camera);
+      },
     };
   }
 
@@ -140,9 +183,31 @@ export function createPresentation({
    * @returns {Object} Complete UI state for subscribers.
    */
 
-  function uiState() {
+  /** The last camera list, reusable by background notifications (geometry
+   *  progress, ground batches) while the catalog, the active camera and the
+   *  health map are unchanged: those notify many times a second during a
+   *  load and none of them changes what a list entry says. */
+  let cameraListCache = null;
+
+  function uiState({ reuseCameraList = false } = {}) {
     const active = parts.selection.getActiveRecord();
     const activeId = active?.camera.id || null;
+    const reusable =
+      reuseCameraList &&
+      cameraListCache?.records === layerState._records &&
+      cameraListCache.activeId === activeId &&
+      cameraListCache.health === layerState._healthById;
+    const cameras = reusable
+      ? cameraListCache.cameras
+      : layerState._records.map((record) =>
+          publicCameraState(record, activeId),
+        );
+    cameraListCache = {
+      records: layerState._records,
+      activeId,
+      health: layerState._healthById,
+      cameras,
+    };
     const payload = {
       enabled: layerState._enabled,
       // Compat boolean + the full tri-state (viewshed design §3b).
@@ -175,10 +240,8 @@ export function createPresentation({
         hoverId: layerState._hoverCardId,
       },
       activeCameraId: activeId,
-      activeCamera: active ? getPublicCameraState(active, activeId) : null,
-      cameras: layerState._records.map((record) =>
-        getPublicCameraState(record, activeId),
-      ),
+      activeCamera: active ? publicCameraState(active, activeId) : null,
+      cameras,
       summary: buildSummaryText(),
     };
     return payload;
@@ -186,8 +249,8 @@ export function createPresentation({
 
   /** Dispatches the current UI state to all registered subscriber callbacks. */
 
-  function notifyListeners() {
-    const payload = uiState();
+  function notifyListeners(options) {
+    const payload = uiState(options);
     for (const callback of layerState._listeners) {
       try {
         callback(payload);
@@ -203,6 +266,30 @@ export function createPresentation({
    * ≤10 Hz while the in-world geometry still tracks every processed move.
    */
 
+  /**
+   * Coalesced notifyListeners for background bursts (ground batches resolving
+   * for thousands of cameras): the first call notifies at once, later calls
+   * within the window fold into one trailing notification. Each notification
+   * maps the whole catalog, so a burst of hundreds must not become hundreds.
+   */
+  function notifyListenersSoon() {
+    const now = Date.now();
+    if (now - layerState._lastSoonNotifyAt >= SOON_NOTIFY_MS) {
+      layerState._lastSoonNotifyAt = now;
+      notifyListeners(BACKGROUND);
+      return;
+    }
+    if (layerState._soonNotifyTimer) return;
+    layerState._soonNotifyTimer = setTimeout(
+      () => {
+        layerState._soonNotifyTimer = null;
+        layerState._lastSoonNotifyAt = Date.now();
+        notifyListeners(BACKGROUND);
+      },
+      SOON_NOTIFY_MS - (now - layerState._lastSoonNotifyAt),
+    );
+  }
+
   function notifyListenersThrottled() {
     const now = Date.now();
     if (now - layerState._lastTransientNotifyAt < 100) return;
@@ -215,5 +302,6 @@ export function createPresentation({
     uiState,
     notifyListeners,
     notifyListenersThrottled,
+    notifyListenersSoon,
   };
 }

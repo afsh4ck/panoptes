@@ -61,6 +61,13 @@
  */
 export const SPLIT_FLAP_ENABLED = true;
 
+/** While paused (the loading screen covers the shell) labels change without a
+ *  cascade: no animation the user could see, and no layout reads. */
+let paused = false;
+export function setSplitFlapPaused(value) {
+  paused = Boolean(value);
+}
+
 /** Time one character spends flipping. */
 export const FLAP_CHAR_MS = 190;
 /** Nominal gap between consecutive characters starting their flip. */
@@ -467,15 +474,17 @@ export function setSplitFlapText(element, text, options = {}) {
     : settled;
   clearFlapTimer(element);
 
-  const beforeWidth = measureWidth(element);
-
   const animate =
     SPLIT_FLAP_ENABLED &&
+    !paused &&
     options.immediate !== true &&
     !prefersReducedMotion() &&
     isVisible(element);
 
   const plan = animate ? planSplitFlap(displayed, next, options) : null;
+  // Only an animated change eases the width; measuring forces a layout, so a
+  // plain text swap skips it. Still read before the text changes.
+  const beforeWidth = plan?.changedCount ? measureWidth(element) : 0;
 
   // THE ONLY TEXT OPERATION. One characterData mutation, no reparenting, so
   // the label is never transiently empty and the live region cannot see a

@@ -203,6 +203,13 @@ export function createSelection({
             ? components.model.formatAge(Date.now() - fire.acqMs)
             : 'unknown',
         sensor: fire.sensor || 'unknown',
+        satellite: fire.satellite || null,
+        acquired: fire.acqMs > 0 ? fire.acqMs : null,
+        brightness: Number.isFinite(fire.brightness) ? fire.brightness : null,
+        daynight: fire.night ? 'night' : 'day',
+        confidencePct: Number.isFinite(fire.confidence)
+          ? Math.round(fire.confidence * 100)
+          : null,
       },
     });
     return recordId;

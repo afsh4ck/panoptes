@@ -21,6 +21,8 @@ export const PUBLISHER_PLACEHOLDER_SHA1 = Object.freeze(
     // 511 platform (GDOT, ADOT, New England 511, Alaska 511): 540×330 PNG
     // "No live camera feed at this time".
     '7063c3929559b480e4c4874b8064082603994c69',
+    // Madrid Calle 30: 1,750-byte JPEG reading "$Failed" for a dead camera.
+    'b511d3cf751f1d3efdb61f6da40909a98787ca04',
   ]),
 );
 
@@ -32,6 +34,11 @@ export function isPublisherPlaceholder(body) {
 }
 
 export const PROVIDER_PROBE_TTL_MS = 30 * 60 * 1000;
+/** A provider found unreachable is checked again sooner than a healthy one. */
+export const PROVIDER_PROBE_RETRY_TTL_MS = 10 * 60 * 1000;
+/** Deadline for the first probe round, and for the one retry before hiding. */
+export const PROBE_TIMEOUT_MS = 8000;
+export const PROBE_RETRY_TIMEOUT_MS = 20000;
 const PROBES_PER_PROVIDER = 3;
 const PROBE_CONCURRENCY = 12;
 
@@ -54,8 +61,8 @@ export function probeSample(cameras, count = PROBES_PER_PROVIDER) {
 /**
  * @param {Array<object>} sources Catalog sources.
  * @param {object} options
- * @param {(source: object) => Promise<boolean>} options.probe Resolves true
- *   when the camera delivered a real frame.
+ * @param {(source: object, opts: {timeoutMs: number}) => Promise<boolean>} options.probe
+ *   Resolves true when the camera delivered a real frame within `timeoutMs`.
  * @param {Map<string, {ok: boolean, at: number}>} [options.cache]
  * @param {number} [options.now]
  * @param {(message: string) => void} [options.log]
@@ -74,22 +81,43 @@ export async function filterReachableProviders(
   const pending = [];
   for (const [key, cameras] of groups) {
     const cached = cache.get(key);
-    if (cached && now - cached.at < PROVIDER_PROBE_TTL_MS) continue;
-    pending.push([key, probeSample(cameras)]);
+    const ttl = cached?.ok
+      ? PROVIDER_PROBE_TTL_MS
+      : PROVIDER_PROBE_RETRY_TTL_MS;
+    if (cached && now - cached.at < ttl) continue;
+    pending.push([key, cameras]);
   }
+  const anyFrame = async (cameras, timeoutMs) =>
+    (
+      await Promise.all(
+        cameras.map((camera) =>
+          probe(camera, { timeoutMs }).catch(() => false),
+        ),
+      )
+    ).some(Boolean);
   // Bounded concurrency across all providers.
   let cursor = 0;
   async function worker() {
     while (cursor < pending.length) {
-      const [key, sample] = pending[cursor++];
+      const [key, cameras] = pending[cursor++];
+      const sample = probeSample(cameras);
       if (!sample.length) {
         cache.set(key, { ok: true, at: now });
         continue;
       }
-      const results = await Promise.all(
-        sample.map((camera) => probe(camera).catch(() => false)),
-      );
-      cache.set(key, { ok: results.some(Boolean), at: now });
+      let ok = await anyFrame(sample, PROBE_TIMEOUT_MS);
+      if (!ok) {
+        // One slow round must not hide a provider for the whole TTL: retry
+        // once on other cameras, with a longer deadline, before hiding it.
+        const others = probeSample(
+          cameras.filter((camera) => !sample.includes(camera)),
+        );
+        ok = await anyFrame(
+          others.length ? others : sample,
+          PROBE_RETRY_TIMEOUT_MS,
+        );
+      }
+      cache.set(key, { ok, at: now });
     }
   }
   await Promise.all(

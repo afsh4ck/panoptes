@@ -13,7 +13,12 @@ import { createAlertEngine } from '../alerts/engine.js';
 import { buildSituationReport, reportFilename } from '../tools/report.js';
 import { collectLayerRecords } from '../tools/exportLayers.js';
 import { downloadText } from '../tools/download.js';
-import { getSelectedEntityContext } from '../data/contextStore.js';
+import {
+  getSelectedEntityContext,
+  registerEntityContext,
+  selectEntityContext,
+} from '../data/contextStore.js';
+import { isPointerFree } from '../data/inputOwnership.js';
 import { STRATEGIC_LAYER_SPECS } from '../data/strategicLayers.js';
 import { hasRealName } from '../layers/strategicSites/model.js';
 import {
@@ -30,6 +35,19 @@ import {
 } from '../intel/vesselIntel.js';
 import { buildLaunchIntelModel } from '../intel/launchIntel.js';
 import { buildSiteIntelModel } from '../intel/siteIntel.js';
+import { fetchSiteWikidata } from '../intel/siteWikidata.js';
+import { buildEventIntelModel } from '../intel/eventIntel.js';
+import {
+  eventContextFor,
+  eventLayerFor,
+  eventSelectionId,
+} from '../intel/eventSelection.js';
+import {
+  NEARBY_RADIUS_KM,
+  nearbyEntries,
+  nearbySection,
+  positionOf,
+} from '../intel/nearby.js';
 import { shouldAutoEnableBuildings } from '../layers/buildings3d/records.js';
 import { createFlightRouteOverlay } from './flightRouteOverlay.js';
 import { formatDuration, formatUtcTime } from './flightRouteModel.js';
@@ -200,6 +218,28 @@ export function createPanoptesConsole({
   const releaseThemeToggle = bindThemeToggle(byId('theme-toggle'), theme);
 
   // ── INTEL ─────────────────────────────────────────────────────────
+  /** Wikidata label languages, the interface language first. */
+  const wikidataLanguages = () =>
+    /^es\b/i.test(document.documentElement?.lang || 'es')
+      ? ['es', 'en']
+      : ['en', 'es'];
+
+  /** NEARBY: what the enabled layers hold around the dossier's subject. */
+  function nearbyFor({ subject, live, model } = {}) {
+    const origin = [live, subject, subject?.record, model?.raw]
+      .map(positionOf)
+      .find(Boolean);
+    if (!origin) return null;
+    const collections = collectLayerRecords({
+      layers: layerRows(),
+      maxPerLayer: 20_000,
+    });
+    return nearbySection(
+      nearbyEntries(origin, collections, { subjectLayerId: subject?.layerId }),
+      { radiusKm: NEARBY_RADIUS_KM },
+    );
+  }
+
   const intel = createIntelPanel({
     document,
     root: byId('intel-panel'),
@@ -264,7 +304,13 @@ export function createPanoptesConsole({
         loadSanctions: loadSanctionsIndex,
       },
       launch: { build: buildLaunchIntelModel },
-      site: { build: buildSiteIntelModel },
+      site: {
+        fetch: (options) =>
+          fetchSiteWikidata({ ...options, languages: wikidataLanguages() }),
+        build: buildSiteIntelModel,
+      },
+      event: { build: buildEventIntelModel },
+      nearby: nearbyFor,
       getSelectedEntityContext: () => getSelectedEntityContext({ dataManager }),
       getTrackedSatellite: () =>
         services.satellitesLayer?.getTrackedSatellite?.() ?? null,
@@ -278,8 +324,53 @@ export function createPanoptesConsole({
       showToast: toast,
       scheduleLayout: () => actions.scheduleLayout?.(),
       flyTo: ({ lat, lon }) => flyTo({ lat, lon, rangeM: 40_000 }),
+      // A NEARBY camera opens in the CAMERAS panel and the view flies to it.
+      openCamera: (cameraId) => {
+        if (!layerModule('cctv')?.selectCamera?.(cameraId, { focus: true }))
+          toast('Camera unavailable');
+      },
     },
   });
+
+  // ── Event markers → INTEL ─────────────────────────────────────────
+  // Earthquakes, disaster alerts, conflict events, cyclones and GPS
+  // interference cells have no click handling of their own: a click on one
+  // publishes it as the selection, so INTEL opens its event dossier.
+  const toDegrees = (cartographic) =>
+    cartographic
+      ? {
+          lat: Cesium.Math.toDegrees(cartographic.latitude),
+          lon: Cesium.Math.toDegrees(cartographic.longitude),
+        }
+      : null;
+  function entityPosition(entity, time) {
+    const cartesian = entity.position?.getValue?.(time);
+    if (cartesian)
+      return toDegrees(Cesium.Cartographic.fromCartesian(cartesian));
+    const rectangle = entity.rectangle?.coordinates?.getValue?.(time);
+    return rectangle ? toDegrees(Cesium.Rectangle.center(rectangle)) : null;
+  }
+  const eventClicks = viewer?.scene?.canvas
+    ? new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas)
+    : null;
+  eventClicks?.setInputAction((click) => {
+    if (!isPointerFree()) return;
+    const entity = viewer.scene.pick(click.position)?.id;
+    if (!(entity instanceof Cesium.Entity) || !eventLayerFor(entity.id)) return;
+    const time = viewer.clock?.currentTime || Cesium.JulianDate.now();
+    // A cyclone's track or cone selects its centre marker, which carries the data.
+    const marker =
+      entity.entityCollection?.getById?.(eventSelectionId(entity.id)) || entity;
+    const context = eventContextFor({
+      id: marker.id,
+      name: marker.name,
+      properties: marker.properties?.getValue?.(time) || {},
+      position: entityPosition(marker, time) || entityPosition(entity, time),
+    });
+    if (!context) return;
+    registerEntityContext(marker, context);
+    selectEntityContext(marker);
+  }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
   // ── ALERTS ────────────────────────────────────────────────────────
   const zones = createZoneStore({ storage });
@@ -1239,6 +1330,7 @@ export function createPanoptesConsole({
       windowRef?.clearInterval?.(drawListTimer);
       cctvCatalog?.destroy();
       tileQuality?.destroy();
+      if (eventClicks && !eventClicks.isDestroyed()) eventClicks.destroy();
       windowRef?.removeEventListener?.(
         'gev:awareness-subject-selected',
         onSubjectSelected,

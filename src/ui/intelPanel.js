@@ -241,13 +241,40 @@ export function createIntelPanel({
           launch: safeCall(services.getSelectedLaunch) || live,
         });
       }
-      default: {
-        const provider = services.site;
+      case 'event': {
+        const provider = services.event;
         if (typeof provider?.build !== 'function')
           return fallbackModelFromSubject(subject, live);
         return provider.build(context);
       }
+      default: {
+        const provider = services.site;
+        if (typeof provider?.build !== 'function')
+          return fallbackModelFromSubject(subject, live);
+        // Wikidata facts, when the site carries an id; a failed lookup only
+        // leaves them out.
+        const payload =
+          descriptor.wikidata && typeof provider.fetch === 'function'
+            ? await cachedPayload(`wikidata:${descriptor.wikidata}`, () =>
+                provider.fetch({ wikidata: descriptor.wikidata, signal }),
+              ).catch(() => null)
+            : null;
+        return provider.build({ ...context, payload });
+      }
     }
+  }
+
+  /** The dossier plus what the enabled layers hold around the subject. */
+  function withNearby(model, subject, live) {
+    const section = safeCall(services.nearby, { subject, live, model });
+    if (!section || !model || typeof model !== 'object') return model;
+    return {
+      ...model,
+      sections: [
+        ...(Array.isArray(model.sections) ? model.sections : []),
+        section,
+      ],
+    };
   }
 
   async function resolve(subject) {
@@ -274,7 +301,7 @@ export function createIntelPanel({
       if (gen !== generation || destroyed) return;
       current = {
         subject,
-        model: normalizeIntelModel(built, subject),
+        model: normalizeIntelModel(withNearby(built, subject, live), subject),
         state: INTEL_STATES.ready,
         error: '',
       };
@@ -388,6 +415,21 @@ export function createIntelPanel({
 
   const ACTIONS = { fly, copy: copyJson, export: exportJson, close };
   listen(body, 'click', (event) => {
+    // A NEARBY row: open its camera, or fly to it.
+    const target = event.target?.closest?.('.intel-row-target');
+    if (target) {
+      event.preventDefault?.();
+      const cameraId = target.getAttribute('data-intel-camera');
+      if (cameraId && typeof actions.openCamera === 'function') {
+        actions.openCamera(cameraId);
+        return;
+      }
+      const lat = Number(target.getAttribute('data-intel-fly-lat'));
+      const lon = Number(target.getAttribute('data-intel-fly-lon'));
+      if (Number.isFinite(lat) && Number.isFinite(lon))
+        safeCall(actions.flyTo, { lat, lon });
+      return;
+    }
     const button = event.target?.closest?.('[data-intel-action]');
     if (!button) return;
     event.preventDefault?.();

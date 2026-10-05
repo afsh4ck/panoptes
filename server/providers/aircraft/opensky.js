@@ -332,6 +332,70 @@ function openSkySourceIsStale(sourceEpochMs, now = Date.now()) {
   );
 }
 
+const M_TO_FT = 1 / 0.3048;
+const MPS_TO_KT = 1 / 0.514444;
+
+/**
+ * Aircraft squawking one of `codes` in the last good global snapshot this
+ * proxy holds, as adsb.lol-shaped `ac` rows. Costs no upstream call: the
+ * emergency feed reads what the flights layer already fetched when adsb.lol
+ * is rate limited. Null when no snapshot is held or it is older than
+ * `maxAgeMs`.
+ * @param {string[]} codes - Squawk codes, e.g. ['7500', '7600', '7700'].
+ * @param {{now?: number, maxAgeMs?: number}} [options]
+ * @returns {{ac: object[], at: number}|null}
+ */
+export function openSkySquawkSnapshot(
+  codes,
+  { now = Date.now(), maxAgeMs = OPENSKY_SOURCE_STALE_MS } = {},
+) {
+  if (!_openskyCacheBody || _openskyCacheStatus !== 200) return null;
+  const at = _openskyCacheSourceEpochMs ?? _openskyCacheTime;
+  if (!Number.isFinite(at) || now - at > maxAgeMs) return null;
+  let states;
+  try {
+    states = JSON.parse(_openskyCacheBody)?.states;
+  } catch {
+    return null;
+  }
+  const wanted = new Set(codes.map(String));
+  const ac = [];
+  for (const state of Array.isArray(states) ? states : []) {
+    // OpenSky state vector: [icao24, callsign, country, time_position,
+    // last_contact, lon, lat, baro_altitude m, on_ground, velocity m/s,
+    // true_track, vertical_rate, sensors, geo_altitude, squawk, …].
+    const squawk = String(state?.[14] ?? '');
+    if (!wanted.has(squawk)) continue;
+    const timePosition = Number(state[3]);
+    ac.push({
+      hex: String(state[0] || ''),
+      flight: String(state[1] || '').trim(),
+      lon: state[5],
+      lat: state[6],
+      alt_baro: state[8]
+        ? 'ground'
+        : Number.isFinite(state[7])
+          ? state[7] * M_TO_FT
+          : undefined,
+      gs: Number.isFinite(state[9]) ? state[9] * MPS_TO_KT : undefined,
+      track: state[10],
+      squawk,
+      seen_pos: Number.isFinite(timePosition)
+        ? Math.max(0, at / 1000 - timePosition)
+        : undefined,
+    });
+  }
+  return { ac, at };
+}
+
+/** Test seam: replace the held snapshot (body as OpenSky returns it). */
+export function setOpenSkySnapshotForTest(body, at = Date.now()) {
+  _openskyCacheBody = body;
+  _openskyCacheStatus = body ? 200 : 0;
+  _openskyCacheTime = at;
+  _openskyCacheSourceEpochMs = body ? openSkySourceEpochMs(body) : null;
+}
+
 /**
  * Vite plugin: OpenSky Network proxy with multi-mode auth and response caching.
  *

@@ -4,16 +4,24 @@ import {
   DEFAULT_CCTV_SOURCE_FILE,
   CCTV_SOURCE_CACHE_MS,
   IBI_511_SITES,
+  SPAIN_CITY_SITES,
 } from './constants.js';
 import {
   loadIbi511Sources,
   loadIowaSourcesFromOpenData,
   loadHongKongSourcesFromOpenData,
   loadNztaSourcesFromOpenData,
+  loadIcelandSourcesFromVegagerdin,
+  loadQldSourcesFromQldTraffic,
   loadMadridSourcesFromInformo,
+  loadDgtSourcesFromNap,
+  loadCataloniaSourcesFromSct,
+  loadEuskadiSourcesFromOpenData,
+  loadSpainCitySources,
 } from './packs.js';
 import { allocateSourceCap, resolveCatalogCap } from './cap.js';
 import { loadGroundHeights, joinGroundHeights } from './groundHeights.js';
+import { loadRoadHeadings, joinRoadHeadings } from './roadHeadings.js';
 import { normalizeSourceItem } from './normalize.js';
 import { fetchCctvImageFromUpstream } from './media.js';
 import { filterReachableProviders } from './reachability.js';
@@ -23,15 +31,13 @@ import {
 } from '../../../src/sources/cctvTypes.js';
 
 /** Short probe: one real frame per provider proves it is reachable. */
-async function probeCameraFrame(source) {
+async function probeCameraFrame(source, { timeoutMs = 8000 } = {}) {
   if (source?.sourceKind === 'txdot-its') return true; // bespoke snapshot API
   const candidate =
     source?.snapshotUrl ||
     (!isVideoFeedType(normalizeFeedType(source?.feedType)) ? source?.url : '');
   if (!candidate) return true; // video-only: judged by the player, not here
-  const result = await fetchCctvImageFromUpstream(candidate, {
-    timeoutMs: 8000,
-  });
+  const result = await fetchCctvImageFromUpstream(candidate, { timeoutMs });
   return Boolean(result?.ok);
 }
 
@@ -152,10 +158,41 @@ const LIVE_PACKS = [
     load: loadNztaSourcesFromOpenData,
   },
   {
+    name: 'iceland',
+    enabled: () => envEnabled('CCTV_ICELAND_ENABLED'),
+    load: loadIcelandSourcesFromVegagerdin,
+  },
+  {
+    name: 'qld',
+    enabled: () => envEnabled('CCTV_QLD_ENABLED'),
+    load: loadQldSourcesFromQldTraffic,
+  },
+  {
     name: 'madrid',
     enabled: () => envEnabled('CCTV_MADRID_ENABLED'),
     load: loadMadridSourcesFromInformo,
   },
+  {
+    name: 'dgt',
+    enabled: () => envEnabled('CCTV_DGT_ENABLED'),
+    load: loadDgtSourcesFromNap,
+  },
+  {
+    name: 'catalonia',
+    enabled: () => envEnabled('CCTV_CATALONIA_ENABLED'),
+    load: loadCataloniaSourcesFromSct,
+  },
+  {
+    name: 'euskadi',
+    enabled: () => envEnabled('CCTV_EUSKADI_ENABLED'),
+    load: loadEuskadiSourcesFromOpenData,
+  },
+  // Spanish city and regional feeds, one pack per site like the 511 sites.
+  ...SPAIN_CITY_SITES.map((site) => ({
+    name: site.pack,
+    enabled: () => envEnabled(`CCTV_${site.env}_ENABLED`),
+    load: () => loadSpainCitySources(site),
+  })),
 ];
 /**
  * Load CCTV sources from a local JSON file (CCTV_SOURCES_FILE env or default).
@@ -215,7 +252,10 @@ export function createCctvCatalog({ sourceRoot = process.cwd() } = {}) {
    *
    * Merges every source pack (live open-data packs, local file, env
    * variable), deduplicates by ID, shares the catalog cap fairly across
-   * packs, and caches for CCTV_SOURCE_CACHE_MS.
+   * packs, and caches for CCTV_SOURCE_CACHE_MS. Past the TTL the previous
+   * catalog keeps serving while the refresh runs in the background, so frame
+   * and health requests never stall behind a multi-provider refetch; only the
+   * very first load is awaited.
    *
    * @returns {Promise<Array<object>>} Deduplicated, capped source list.
    */
@@ -230,11 +270,14 @@ export function createCctvCatalog({ sourceRoot = process.cwd() } = {}) {
     // Single-flight: a burst of requests arriving past the TTL shares ONE refresh
     // instead of each launching the full multi-provider refetch. The `.finally`
     // clears the ref so the next post-TTL cycle starts fresh.
-    if (_cctvSourceInflight) return _cctvSourceInflight;
-    _cctvSourceInflight = refreshCctvSources().finally(() => {
-      _cctvSourceInflight = null;
-    });
-    return _cctvSourceInflight;
+    if (!_cctvSourceInflight) {
+      _cctvSourceInflight = refreshCctvSources().finally(() => {
+        _cctvSourceInflight = null;
+      });
+      // A background refresh has no awaiting caller; never let it go unhandled.
+      _cctvSourceInflight.catch(() => {});
+    }
+    return _cctvSourceCache.length ? _cctvSourceCache : _cctvSourceInflight;
   }
 
   /**
@@ -295,8 +338,9 @@ export function createCctvCatalog({ sourceRoot = process.cwd() } = {}) {
     // Shipped ground heights (src/data/local_data/cctv_ground_heights/, produced by
     // scripts/precompute-cctv-heights.mjs) ride along on the served source so
     // the client can place a camera and its monitor plane with zero sampling.
+    // Road bearings first: shipped ground heights are keyed to the served pose.
     const joined = joinGroundHeights(
-      allocation.sources,
+      joinRoadHeadings(allocation.sources, loadRoadHeadings(sourceRoot)),
       loadGroundHeights(sourceRoot),
     );
     // Hide whole providers that cannot deliver one real frame from here

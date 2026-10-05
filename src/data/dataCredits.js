@@ -344,6 +344,84 @@ export const DATA_CREDITS = [
       '<a href="https://informo.madrid.es/" target="_blank" rel="noopener">informo.madrid.es</a> (courtesy)',
   },
   {
+    key: 'cctv-road-headings',
+    html: 'CCTV camera bearings (Spain): derived from OpenStreetMap road geometry via <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> (ODbL)',
+  },
+  {
+    key: 'wikidata-site-facts',
+    html:
+      'INTEL site facts: ' +
+      '<a href="https://www.wikidata.org/" target="_blank" rel="noopener">Wikidata</a> ' +
+      '(<a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0</a>); ' +
+      'photos from <a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons</a> under each file\'s licence',
+  },
+  {
+    key: 'iceland-cctv',
+    html:
+      'CCTV cameras &amp; frames (Iceland): ' +
+      '<a href="https://www.vegagerdin.is/" target="_blank" rel="noopener">Vegagerðin</a> open data',
+  },
+  {
+    key: 'qld-cctv',
+    html:
+      'CCTV cameras &amp; frames (Queensland): ' +
+      '<a href="https://qldtraffic.qld.gov.au/" target="_blank" rel="noopener">QLDTraffic</a>, State of Queensland (Department of Transport and Main Roads) ' +
+      '(<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>)',
+  },
+  {
+    key: 'dgt-cctv',
+    html:
+      'CCTV cameras &amp; frames (Spain): Dirección General de Tráfico — ' +
+      '<a href="https://nap.dgt.es/dataset/camaras-dgt-datex2-v3-7" target="_blank" rel="noopener">Punto de Acceso Nacional (nap.dgt.es)</a> (CC BY)',
+  },
+  {
+    key: 'catalonia-cctv',
+    html:
+      'CCTV cameras &amp; frames (Catalonia): Generalitat de Catalunya — ' +
+      '<a href="https://datos.gob.es/es/catalogo/a09002970-camaras-de-trafico-en-las-carreteras-de-cataluna" target="_blank" rel="noopener">Servei Català de Trànsit open data</a>, ' +
+      'with Ajuntament de Barcelona and Ajuntament de Terrassa cameras',
+  },
+  {
+    key: 'euskadi-cctv',
+    html:
+      'CCTV cameras &amp; frames (Basque Country): ' +
+      '<a href="https://opendata.euskadi.eus/" target="_blank" rel="noopener">Open Data Euskadi</a> traffic API — ' +
+      'Gobierno Vasco (Trafikoa), Diputación Foral de Bizkaia, Ayuntamiento de Donostia-San Sebastián ' +
+      '(<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>)',
+  },
+  {
+    key: 'malaga-cctv',
+    html:
+      'CCTV cameras &amp; frames (Málaga): Ayuntamiento de Málaga — ' +
+      '<a href="https://datosabiertos.malaga.eu/dataset/camaras-de-trafico" target="_blank" rel="noopener">datosabiertos.malaga.eu</a> ' +
+      '(<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>)',
+  },
+  {
+    key: 'vitoria-cctv',
+    html:
+      'CCTV cameras &amp; frames (Vitoria-Gasteiz): Ayuntamiento de Vitoria-Gasteiz — ' +
+      '<a href="https://datos.gob.es/es/catalogo/l01010590-camaras-de-trafico-en-tiempo-real" target="_blank" rel="noopener">traffic cameras open data</a>',
+  },
+  {
+    key: 'vigo-cctv',
+    html:
+      'CCTV cameras &amp; frames (Vigo): Concello de Vigo — ' +
+      '<a href="https://datos.vigo.org/" target="_blank" rel="noopener">datos.vigo.org</a> ' +
+      '(<a href="https://datos.vigo.org/condiciones-de-uso/" target="_blank" rel="noopener">terms of use</a>)',
+  },
+  {
+    key: 'calle30-cctv',
+    html:
+      'CCTV cameras &amp; frames (Madrid M-30): Madrid Calle 30 — Ayuntamiento de Madrid open data ' +
+      '(<a href="https://datos.madrid.es/" target="_blank" rel="noopener">datos.madrid.es</a>, CC BY)',
+  },
+  {
+    key: 'meteogalicia-cams',
+    html:
+      'Webcams (Galicia): <a href="https://www.meteogalicia.gal/" target="_blank" rel="noopener">MeteoGalicia</a> — Xunta de Galicia ' +
+      '(<a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>)',
+  },
+  {
     key: 'nsw-cctv',
     html:
       'CCTV cameras &amp; frames (New South Wales): ' +

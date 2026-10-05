@@ -14,6 +14,7 @@ export const INTEL_KINDS = Object.freeze([
   'vessel',
   'launch',
   'site',
+  'event',
 ]);
 
 /** Text glyphs, not icon-font ligatures: the Material Symbols subset in
@@ -25,6 +26,7 @@ export const KIND_GLYPHS = Object.freeze({
   vessel: '🚢',
   launch: '🚀',
   site: '▣',
+  event: '◉',
 });
 
 export const KIND_LABELS = Object.freeze({
@@ -33,6 +35,7 @@ export const KIND_LABELS = Object.freeze({
   vessel: 'VESSEL',
   launch: 'LAUNCH',
   site: 'SITE',
+  event: 'EVENT',
 });
 
 /** Layer ids the selection lanes publish, mapped to a dossier kind. Unknown
@@ -44,6 +47,12 @@ const LAYER_KINDS = Object.freeze({
   satellites: 'satellite',
   'ais-live-vessels': 'vessel',
   'rocket-launches': 'launch',
+  earthquakes: 'event',
+  'local-firms': 'event',
+  'disaster-alerts': 'event',
+  'conflict-events': 'event',
+  'weather-cyclones': 'event',
+  'gps-interference': 'event',
 });
 
 export const INTEL_CACHE_LIMIT = 50;
@@ -226,8 +235,27 @@ export function requestDescriptorFor(subject, live = null) {
       };
     case 'launch':
       return { kind: 'launch', key, launchId: subject.id };
-    default:
-      return { kind: 'site', key, layerId: subject.layerId, id: subject.id };
+    case 'event':
+      return { kind: 'event', key, layerId: subject.layerId, id: subject.id };
+    default: {
+      // Most military bases and nuclear sites, and every volcano, carry one.
+      const wikidata =
+        [
+          props['tags.wikidata'],
+          props['tags.wikidata_id'],
+          props.wikidata,
+          cleanText(subject.id).replace(/^wd:/, ''),
+        ]
+          .map((value) => cleanText(value).toUpperCase())
+          .find((value) => /^Q[1-9]\d{0,11}$/.test(value)) || null;
+      return {
+        kind: 'site',
+        key,
+        layerId: subject.layerId,
+        id: subject.id,
+        ...(wikidata ? { wikidata } : {}),
+      };
+    }
   }
 }
 
@@ -291,11 +319,24 @@ function normalizeRow(row) {
   const value = cleanText(row.value);
   if (!label || !value) return null;
   const href = sanitizeHref(row.href);
+  // In-app targets (NEARBY rows): a position to fly to, a camera to open.
+  const lat = Number(row.fly?.lat);
+  const lon = Number(row.fly?.lon);
+  const fly =
+    Number.isFinite(lat) &&
+    Number.isFinite(lon) &&
+    Math.abs(lat) <= 90 &&
+    Math.abs(lon) <= 180
+      ? { lat, lon }
+      : null;
+  const camera = cleanText(row.camera).slice(0, 128);
   return {
     label,
     value,
     mono: Boolean(row.mono),
     ...(href ? { href } : {}),
+    ...(fly ? { fly } : {}),
+    ...(camera ? { camera } : {}),
   };
 }
 
@@ -502,7 +543,19 @@ function renderRow(row) {
         { href: row.href, target: '_blank', rel: 'noopener noreferrer' },
         row.value,
       )
-    : row.value;
+    : row.camera || row.fly
+      ? h(
+          'button',
+          {
+            type: 'button',
+            class: 'intel-row-target',
+            'data-intel-camera': row.camera || null,
+            'data-intel-fly-lat': row.fly ? String(row.fly.lat) : null,
+            'data-intel-fly-lon': row.fly ? String(row.fly.lon) : null,
+          },
+          row.value,
+        )
+      : row.value;
   return [
     h('dt', null, row.label),
     h('dd', { class: row.mono ? 'mono' : null }, value),

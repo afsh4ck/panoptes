@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   PROVIDER_PROBE_TTL_MS,
+  PROVIDER_PROBE_RETRY_TTL_MS,
+  PROBE_TIMEOUT_MS,
+  PROBE_RETRY_TIMEOUT_MS,
   filterReachableProviders,
   isPublisherPlaceholder,
   probeSample,
@@ -62,4 +65,43 @@ test('samples are spread across the provider', () => {
 test('stock no-feed cards are recognised by content', () => {
   assert.equal(isPublisherPlaceholder(Buffer.from('real jpeg bytes')), false);
   assert.equal(isPublisherPlaceholder(null), false);
+});
+
+test('one slow round is retried on other cameras with a longer deadline', async () => {
+  const seen = [];
+  const { dropped } = await filterReachableProviders(cams('NZTA', 12), {
+    // The first round times out; the retry answers.
+    probe: async (camera, { timeoutMs }) => {
+      seen.push([camera.id, timeoutMs]);
+      return timeoutMs === PROBE_RETRY_TIMEOUT_MS;
+    },
+  });
+  assert.deepEqual(dropped, []);
+  const first = seen.filter(([, ms]) => ms === PROBE_TIMEOUT_MS).map(([id]) => id);
+  const retry = seen.filter(([, ms]) => ms === PROBE_RETRY_TIMEOUT_MS).map(([id]) => id);
+  assert.equal(first.length, 3);
+  assert.equal(retry.length, 3);
+  assert.ok(retry.every((id) => !first.includes(id)), 'the retry samples other cameras');
+});
+
+test('a provider hidden after both rounds is checked again sooner than a healthy one', async () => {
+  const cache = new Map();
+  const calls = { Down: 0, Up: 0 };
+  const probe = async (camera) => {
+    calls[camera.provider] += 1;
+    return camera.provider === 'Up';
+  };
+  const sources = [...cams('Down', 6), ...cams('Up', 6)];
+  const { dropped } = await filterReachableProviders(sources, { probe, cache, now: 0 });
+  assert.deepEqual(dropped, ['Down']);
+  assert.equal(calls.Down, 6, 'both rounds ran before hiding');
+  const before = { ...calls };
+  await filterReachableProviders(sources, {
+    probe,
+    cache,
+    now: PROVIDER_PROBE_RETRY_TTL_MS + 1,
+  });
+  assert.ok(calls.Down > before.Down, 'the hidden provider is re-probed');
+  assert.equal(calls.Up, before.Up, 'the healthy one keeps its verdict');
+  assert.ok(PROVIDER_PROBE_RETRY_TTL_MS < PROVIDER_PROBE_TTL_MS);
 });

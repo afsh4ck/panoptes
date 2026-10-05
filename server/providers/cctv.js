@@ -18,8 +18,19 @@ import {
 } from './cctv/constants.js';
 import { sanitizeCctvRangeHeader } from './cctv/range.js';
 import { createHlsPuller } from './cctv/stream.js';
+import {
+  createSourcesBodyCache,
+  encodedSourcesBody,
+} from './cctv/sourcesPayload.js';
+import { createFrameFreshness } from './cctv/freshness.js';
 import { googleServerApiKey } from './places/google-key.js';
 export { CCTV_FRAME_FETCH_TIMEOUT_MS, fetchCctvImageFromUpstream };
+
+/** Catalog warm-up is on by default; tests and CCTV_WARM_CATALOG=0 skip it. */
+function warmCatalogEnabled() {
+  if (String(process.env.CCTV_WARM_CATALOG || '').trim() === '0') return false;
+  return !process.env.NODE_TEST_CONTEXT;
+}
 /**
  * Vite plugin: CCTV camera proxy with source registry, frame/media serving,
  * fallback chain (upstream -> Street View -> synthetic SVG), and health tracking.
@@ -43,6 +54,19 @@ export function cctvProxy({ sourceRoot = process.cwd() } = {}) {
   const HEALTH_MAX_ENTRIES = CCTV_MAX_SOURCES_CEILING;
   /** Live HLS strategies (see ./cctv/stream.js). Shared across dev and preview. */
   const puller = createHlsPuller();
+  /** `/sources` bodies, serialized and compressed once per catalog snapshot. */
+  const sourcesBodies = createSourcesBodyCache();
+  /** id → source for the current catalog snapshot, rebuilt only when it
+   * changes rather than on every frame and health request. */
+  let indexedSources = null;
+  let sourceIndex = new Map();
+  const indexSources = (sources) => {
+    if (sources !== indexedSources) {
+      indexedSources = sources;
+      sourceIndex = new Map(sources.map((source) => [source.id, source]));
+    }
+    return sourceIndex;
+  };
 
   /** Update the health entry for a camera, evicting the oldest entry if at capacity. */
   const setHealth = (cameraId, patch) => {
@@ -52,15 +76,29 @@ export function cctvProxy({ sourceRoot = process.cwd() } = {}) {
       health.delete(oldest);
     }
     const prev = health.get(cameraId) || {};
+    // A fallback frame is not the publisher's: its age and frozen flag lapse.
+    const upstreamFrame = !patch.status || patch.status === 'ok';
     health.set(cameraId, {
       id: cameraId,
       status: patch.status || prev.status || 'unknown',
       sourceKind: patch.sourceKind || prev.sourceKind || 'unknown',
       label: patch.label || prev.label || '',
       message: patch.message || prev.message || '',
+      frameTime:
+        'frameTime' in patch
+          ? patch.frameTime
+          : upstreamFrame
+            ? (prev.frameTime ?? null)
+            : null,
+      frozen:
+        'frozen' in patch
+          ? Boolean(patch.frozen)
+          : upstreamFrame && Boolean(prev.frozen),
       updatedAt: Date.now(),
     });
   };
+  /** When each camera's served still last changed (see ./cctv/freshness.js). */
+  const freshness = createFrameFreshness({ maxEntries: HEALTH_MAX_ENTRIES });
 
   /** Snapshot all camera health entries as an array. */
   const listHealth = () => Array.from(health.values());
@@ -133,46 +171,27 @@ export function cctvProxy({ sourceRoot = process.cwd() } = {}) {
     server.httpServer?.on('close', () => {
       puller.shutdown();
     });
+    // Load the catalog now instead of on the first request, which would
+    // otherwise wait for every pack and the provider probe (~30–45 s).
+    if (warmCatalogEnabled()) getCctvSources().catch(() => {});
     server.middlewares.use('/api/cctv', async (req, res) => {
       try {
         const sources = await getCctvSources();
-        const sourceById = new Map(
-          sources.map((source) => [source.id, source]),
-        );
+        const sourceById = indexSources(sources);
         const url = new URL(req.url || '/', 'http://localhost');
 
         if (url.pathname === '/sources') {
-          const body = {
-            sources: sources.map((source) => ({
-              id: source.id,
-              name: source.name,
-              city: source.city,
-              cityId: source.cityId,
-              provider: source.provider,
-              lat: source.lat,
-              lon: source.lon,
-              headingDeg: source.headingDeg,
-              headingConfidence: source.headingConfidence || '',
-              pitchDeg: source.pitchDeg,
-              fovDeg: source.fovDeg,
-              rangeM: source.rangeM,
-              mountHeightM: source.mountHeightM,
-              groundElevationM: source.groundElevationM,
-              feedType: normalizeFeedType(source.feedType),
-              sourceKind:
-                source.sourceKind || (source.url ? 'configured' : 'fallback'),
-              poseSource: source.poseSource,
-              license: source.license,
-              credit: source.credit || '',
-              code: source.code || '',
-              groundHeights: source.groundHeights || null,
-            })),
-          };
+          const { encoding, body } = await encodedSourcesBody(
+            sourcesBodies(sources),
+            req.headers?.['accept-encoding'],
+          );
           res.writeHead(200, {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-store',
+            Vary: 'Accept-Encoding',
+            ...(encoding ? { 'Content-Encoding': encoding } : {}),
           });
-          res.end(JSON.stringify(body));
+          res.end(body);
           return;
         }
 
@@ -507,11 +526,20 @@ export function cctvProxy({ sourceRoot = process.cwd() } = {}) {
             ? await fetchTxdotSnapshot(upstreamCandidate)
             : await fetchCctvImageFromUpstream(upstreamCandidate);
         if (upstreamImage?.ok) {
+          const { frameTime, frozen } = freshness.observe(
+            cameraId,
+            upstreamImage.body,
+            { lastModified: upstreamImage.lastModified },
+          );
           setHealth(cameraId, {
             status: 'ok',
             sourceKind: 'snapshot',
             label: source?.provider || 'Configured source',
-            message: 'Upstream snapshot active',
+            message: frozen
+              ? 'Publisher image has not changed for over an hour'
+              : 'Upstream snapshot active',
+            frameTime,
+            frozen,
           });
           res.writeHead(200, {
             'Content-Type': upstreamImage.contentType,

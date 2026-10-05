@@ -8,10 +8,12 @@ export const DEFAULT_AUSTIN_MAX_SOURCES = 250;
  * Catalog-wide safety ceiling on served cameras. Each pack already caps
  * itself (nearest-to-anchor first); this bound only matters when the packs
  * together exceed it, and it is then filled round-robin across packs (see
- * cap.js) so no region is silently dropped. Sized above the sum of the
- * default per-pack caps so a default install never trims.
+ * cap.js) so no region is silently dropped. The default packs offer more
+ * than this, so the largest ones (Caltrans and the Georgia and Florida 511
+ * sites) are thinned to an equal share; every other pack, the Spanish ones
+ * included, loads whole.
  */
-export const DEFAULT_CCTV_MAX_SOURCES = 16000;
+export const DEFAULT_CCTV_MAX_SOURCES = 21500;
 /** Hard upper bound for CCTV_MAX_SOURCES; also sizes the health map. Billboards
  * share one collection and coverage geometry is built only for the visible
  * set, so the client stays responsive at this size. */
@@ -292,6 +294,7 @@ export const CCTV_MEDIA_MAX_BODY_BYTES = 64 * 1024 * 1024;
  * and are left as still frames.
  */
 export const IBI_511_PAGE_SIZE = 100;
+/* A site may set its own `pageSize` when it rejects longer pages. */
 /** Bounds the paging loop: 80 pages = 8,000 cameras per site. */
 export const IBI_511_MAX_PAGES = 80;
 /** Pages fetched in parallel per site. */
@@ -435,6 +438,156 @@ export const IBI_511_SITES = Object.freeze([
     ],
     elevationM: 80,
   }),
+  Object.freeze({
+    pack: 'nc511',
+    env: 'NC511',
+    host: 'https://www.drivenc.gov',
+    provider: 'DriveNC (NCDOT)',
+    region: 'North Carolina',
+    bounds: [33.7, -84.4, 36.7, -75.3],
+    defaultMax: 1200,
+    anchors: [
+      { lat: 35.2271, lon: -80.8431 }, // Charlotte
+      { lat: 35.7796, lon: -78.6382 }, // Raleigh
+      { lat: 36.0726, lon: -79.792 }, // Greensboro
+      { lat: 35.5951, lon: -82.5515 }, // Asheville
+      { lat: 34.2104, lon: -77.8868 }, // Wilmington
+    ],
+    elevationM: 200,
+  }),
+  Object.freeze({
+    pack: 'ct511',
+    env: 'CTROADS',
+    host: 'https://ctroads.org',
+    provider: 'CTroads (CTDOT)',
+    region: 'Connecticut',
+    bounds: [40.9, -73.8, 42.1, -71.7],
+    defaultMax: 400,
+    anchors: [
+      { lat: 41.7658, lon: -72.6734 }, // Hartford
+      { lat: 41.3083, lon: -72.9279 }, // New Haven
+      { lat: 41.1865, lon: -73.1952 }, // Bridgeport
+      { lat: 41.0534, lon: -73.5387 }, // Stamford
+    ],
+    elevationM: 50,
+  }),
+  Object.freeze({
+    pack: 'ab511',
+    env: 'AB511',
+    host: 'https://511.alberta.ca',
+    provider: '511 Alberta',
+    region: 'Alberta',
+    /** 511.alberta.ca answers HTTP 500 to pages longer than 50 rows. */
+    pageSize: 50,
+    bounds: [48.9, -120.1, 60.1, -109.9],
+    defaultMax: 400,
+    anchors: [
+      { lat: 51.0447, lon: -114.0719 }, // Calgary
+      { lat: 53.5461, lon: -113.4938 }, // Edmonton
+      { lat: 52.2681, lon: -113.8112 }, // Red Deer
+      { lat: 49.6956, lon: -112.8451 }, // Lethbridge
+    ],
+    elevationM: 900,
+  }),
+  Object.freeze({
+    pack: 'ns511',
+    env: 'NS511',
+    host: 'https://511.novascotia.ca',
+    provider: '511 Nova Scotia',
+    region: 'Nova Scotia',
+    bounds: [43.3, -66.5, 47.1, -59.6],
+    defaultMax: 100,
+    anchors: [
+      { lat: 44.6488, lon: -63.5752 }, // Halifax
+      { lat: 45.3669, lon: -63.2654 }, // Truro
+      { lat: 46.1368, lon: -60.1942 }, // Sydney, NS
+    ],
+    elevationM: 40,
+  }),
+  Object.freeze({
+    pack: 'nb511',
+    env: 'NB511',
+    host: 'https://www.511.gnb.ca',
+    provider: '511 New Brunswick',
+    region: 'New Brunswick',
+    bounds: [44.5, -69.1, 48.1, -63.7],
+    defaultMax: 100,
+    anchors: [
+      { lat: 46.0878, lon: -64.7782 }, // Moncton
+      { lat: 45.2733, lon: -66.0633 }, // Saint John
+      { lat: 45.9636, lon: -66.6431 }, // Fredericton
+    ],
+    elevationM: 60,
+  }),
+  Object.freeze({
+    pack: 'sk511',
+    env: 'SK511',
+    host: 'https://hotline.gov.sk.ca',
+    provider: 'Saskatchewan Highway Hotline',
+    region: 'Saskatchewan',
+    bounds: [48.9, -110.1, 60.1, -101.3],
+    defaultMax: 100,
+    anchors: [
+      { lat: 50.4452, lon: -104.6189 }, // Regina
+      { lat: 52.1332, lon: -106.67 }, // Saskatoon
+    ],
+    elevationM: 550,
+  }),
+  Object.freeze({
+    pack: 'mb511',
+    env: 'MB511',
+    host: 'https://www.manitoba511.ca',
+    provider: 'Manitoba 511',
+    region: 'Manitoba',
+    bounds: [48.9, -102.1, 60.1, -88.9],
+    defaultMax: 100,
+    anchors: [
+      { lat: 49.8951, lon: -97.1384 }, // Winnipeg
+      { lat: 49.8485, lon: -99.95 }, // Brandon
+    ],
+    elevationM: 240,
+  }),
+  Object.freeze({
+    pack: 'nl511',
+    env: 'NL511',
+    host: 'https://www.511nl.ca',
+    provider: '511 Newfoundland and Labrador',
+    region: 'Newfoundland and Labrador',
+    bounds: [46.5, -67.9, 60.5, -52.5],
+    defaultMax: 100,
+    anchors: [
+      { lat: 47.5615, lon: -52.7126 }, // St. John's
+      { lat: 48.9564, lon: -54.6089 }, // Gander
+      { lat: 48.95, lon: -57.9522 }, // Corner Brook
+    ],
+    elevationM: 60,
+  }),
+  Object.freeze({
+    pack: 'yt511',
+    env: 'YT511',
+    host: 'https://511yukon.ca',
+    provider: '511 Yukon',
+    region: 'Yukon',
+    bounds: [59.9, -141.1, 69.7, -123.8],
+    defaultMax: 50,
+    anchors: [
+      { lat: 60.7212, lon: -135.0568 }, // Whitehorse
+    ],
+    elevationM: 700,
+  }),
+  Object.freeze({
+    pack: 'pe511',
+    env: 'PE511',
+    host: 'https://511.gov.pe.ca',
+    provider: '511 PEI',
+    region: 'Prince Edward Island',
+    bounds: [45.9, -64.5, 47.1, -61.9],
+    defaultMax: 30,
+    anchors: [
+      { lat: 46.2382, lon: -63.1311 }, // Charlottetown
+    ],
+    elevationM: 20,
+  }),
 ]);
 
 /** Iowa DOT traffic cameras: keyless ArcGIS feature service; ~700 publish live
@@ -471,6 +624,44 @@ export const NZTA_ANCHORS = [
   { lat: -43.5321, lon: 172.6362 }, // Christchurch
 ];
 
+/** Vegagerðin (Icelandic Road and Coastal Administration) road webcams: keyless
+ * open-data JSON with WGS84 positions; frames on www.vegagerdin.is. */
+export const ICELAND_CAMERAS_URL =
+  'https://gagnaveita.vegagerdin.is/api/vefmyndavelar2014_1';
+export const ICELAND_IMAGE_ORIGIN = 'https://www.vegagerdin.is/vgdata/';
+export const DEFAULT_ICELAND_MAX_SOURCES = 500;
+export const ICELAND_BOUNDS = {
+  south: 63.2,
+  west: -24.6,
+  north: 66.6,
+  east: -13.4,
+};
+export const ICELAND_ANCHORS = [
+  { lat: 64.1466, lon: -21.9426 }, // Reykjavík
+  { lat: 65.6885, lon: -18.1262 }, // Akureyri
+  { lat: 65.2653, lon: -14.3948 }, // Egilsstaðir
+];
+
+/** QLDTraffic (Queensland Department of Transport and Main Roads) webcams:
+ * GeoJSON from the QLDTraffic API (CC BY 4.0 on data.qld.gov.au). The API
+ * answers 401 without the key TMR hands out with its API specification, so
+ * the pack loads only when QLDTRAFFIC_API_KEY is set. */
+export const QLD_CAMERAS_URL = 'https://api.qldtraffic.qld.gov.au/v1/webcams';
+export const QLD_IMAGE_ORIGIN = 'https://cameras.qldtraffic.qld.gov.au/';
+export const DEFAULT_QLD_MAX_SOURCES = 200;
+export const QLD_BOUNDS = {
+  south: -29.3,
+  west: 137.9,
+  north: -9.1,
+  east: 153.7,
+};
+export const QLD_ANCHORS = [
+  { lat: -27.4698, lon: 153.0251 }, // Brisbane
+  { lat: -28.0167, lon: 153.4 }, // Gold Coast
+  { lat: -16.9186, lon: 145.7781 }, // Cairns
+  { lat: -19.259, lon: 146.8169 }, // Townsville
+];
+
 /** City of Madrid traffic cameras (Informo, Ayuntamiento de Madrid, keyless). */
 export const MADRID_CAMERAS_URL =
   'https://informo.madrid.es/informo/tmadrid/CCTV.kml';
@@ -498,6 +689,171 @@ export const MADRID_CAMERA_POSES = Object.freeze({
     mountHeightM: 9,
   },
 });
+
+/**
+ * DGT (Dirección General de Tráfico) road cameras: the DATEX II v3.7
+ * DevicePublication on the National Access Point, CC BY. It covers Spain
+ * except Catalonia and the Basque Country, which run their own traffic
+ * services (packs below). The v3.6 URL now 301-redirects here.
+ */
+export const DGT_CAMERAS_URL =
+  'https://nap.dgt.es/datex2/v3/dgt/DevicePublication/camaras_datex2_v37.xml';
+export const DGT_IMAGE_ORIGIN = 'https://etraffic.dgt.es/camarasEtraffic/';
+export const DEFAULT_DGT_MAX_SOURCES = 2200;
+export const DGT_ANCHORS = [
+  { lat: 40.4168, lon: -3.7038 }, // Madrid
+  { lat: 39.4699, lon: -0.3763 }, // València
+  { lat: 37.3891, lon: -5.9845 }, // Sevilla
+  { lat: 41.6488, lon: -0.8891 }, // Zaragoza
+  { lat: 43.3623, lon: -8.4115 }, // A Coruña
+  { lat: 36.7213, lon: -4.4214 }, // Málaga
+];
+/** Spain, including the Balearic and Canary Islands, Ceuta and Melilla. */
+export const SPAIN_BOUNDS = Object.freeze({
+  south: 27.4,
+  north: 44.0,
+  west: -18.4,
+  east: 4.6,
+});
+
+/**
+ * Servei Català de Trànsit camera list (WFS GML, keyless). Besides the SCT's
+ * own road cameras it carries the Ajuntament de Barcelona and Terrassa city
+ * cameras; Andorra's rows are outside Spain and their images are gone.
+ */
+export const CATALONIA_CAMERAS_URL =
+  'https://www.gencat.cat/transit/opendata/cameres.xml';
+/**
+ * The list's `RenderService` link 302s to this frame endpoint on the same host.
+ * Plain HTTP, as the list itself links it: over HTTPS the host offers a
+ * Diffie-Hellman key OpenSSL 3 refuses (ERR_SSL_DH_KEY_TOO_SMALL).
+ */
+export const SCT_IMAGE_ORIGIN = 'http://mct.gencat.cat/mct2bo/TransitCamera';
+export const BCN_IMAGE_ORIGIN = 'https://www.bcn.cat/transit/imatges/';
+export const TERRASSA_IMAGE_ORIGIN = 'https://emap.terrassa.cat/it_terrassa/';
+export const DEFAULT_CATALONIA_MAX_SOURCES = 300;
+export const CATALONIA_ANCHORS = [{ lat: 41.3874, lon: 2.1686 }]; // Barcelona
+export const CATALONIA_PROVIDERS = Object.freeze({
+  SCT: 'Servei Català de Trànsit',
+  IMI: 'Ajuntament de Barcelona',
+  Terrassa: 'Ajuntament de Terrassa',
+});
+
+/**
+ * Open Data Euskadi traffic API (keyless, paged): cameras of the Basque traffic
+ * agencies, with ETRS89 / UTM 30N easting and northing in the `longitude` /
+ * `latitude` fields. Only image links that still serve frames are kept: the
+ * Trafikoa ones (rehomed on apps.trafikoa.euskadi.eus) and the Diputación de
+ * Bizkaia ones (bizkaimove.eus). The Bilbao and Vitoria-Gasteiz links in the
+ * feed answer 404 or a "no signal" placeholder (checked 2026-10-03).
+ */
+export const EUSKADI_CAMERAS_URL =
+  'https://api.euskadi.eus/traffic/v1.0/cameras';
+export const EUSKADI_MAX_PAGES = 40;
+export const TRAFIKOA_IMAGE_ORIGIN =
+  'https://apps.trafikoa.euskadi.eus/static/files/tr/camaras/';
+export const BIZKAIA_IMAGE_ORIGIN = 'https://www.bizkaimove.eus/camaras/';
+export const DEFAULT_EUSKADI_MAX_SOURCES = 400;
+export const EUSKADI_ANCHORS = [
+  { lat: 43.263, lon: -2.935 }, // Bilbao
+  { lat: 43.3183, lon: -1.9812 }, // Donostia-San Sebastián
+  { lat: 42.8467, lon: -2.6716 }, // Vitoria-Gasteiz
+];
+export const EUSKADI_PROVIDERS = Object.freeze({
+  1: 'Gobierno Vasco · Trafikoa',
+  2: 'Diputación Foral de Bizkaia',
+  3: 'Diputación Foral de Álava',
+  4: 'Diputación Foral de Gipuzkoa',
+  5: 'Ayuntamiento de Bilbao',
+  6: 'Ayuntamiento de Vitoria-Gasteiz',
+  7: 'Ayuntamiento de Donostia-San Sebastián',
+});
+
+/**
+ * Spanish city and regional camera services published as open data, one pack
+ * each (`CCTV_<env>_ENABLED`, `CCTV_<env>_MAX_SOURCES`). `format` picks the
+ * row parser in packs.js, which rebuilds every frame on `frameOrigin` from the
+ * camera's own id. Left out (checked 2026-10-03): València, whose viewer
+ * streams video over WebSocket and forbids showing the images on other
+ * websites, and Bilbao, whose dataset only links frames that now return 404.
+ */
+export const SPAIN_CITY_SITES = Object.freeze([
+  Object.freeze({
+    pack: 'malaga',
+    env: 'MALAGA',
+    format: 'malaga',
+    url: 'https://datosabiertos.malaga.eu/recursos/transporte/trafico/da_camarasTrafico-4326.geojson',
+    frameOrigin:
+      'https://ctraficomovilidad.malaga.eu/recursos/movilidad/camaras_trafico/',
+    city: 'Málaga',
+    cityId: 'es-malaga',
+    provider: 'Ayuntamiento de Málaga',
+    license: 'Ayuntamiento de Málaga · datos abiertos (CC BY 4.0)',
+    anchor: { lat: 36.7213, lon: -4.4214 },
+    bounds: { south: 36.6, north: 36.8, west: -4.65, east: -4.3 },
+    defaultMax: 200,
+  }),
+  Object.freeze({
+    pack: 'vitoria',
+    env: 'VITORIA',
+    format: 'vitoria',
+    url: 'https://www.vitoria-gasteiz.org/c11-01w/cameras?action=list&format=GEOJSON',
+    frameOrigin:
+      'https://www.vitoria-gasteiz.org/c11-01w/cameras?action=get&id=',
+    city: 'Vitoria-Gasteiz',
+    cityId: 'eus-vitoria-gasteiz',
+    provider: 'Ayuntamiento de Vitoria-Gasteiz',
+    license: 'Ayuntamiento de Vitoria-Gasteiz · datos abiertos',
+    anchor: { lat: 42.8467, lon: -2.6716 },
+    bounds: { south: 42.78, north: 42.92, west: -2.78, east: -2.58 },
+    defaultMax: 60,
+  }),
+  Object.freeze({
+    pack: 'vigo',
+    env: 'VIGO',
+    format: 'vigo',
+    url: 'https://datos.vigo.org/data/trafico/camaras-trafico.geojson',
+    // The listed http:// links 301 to this origin; frames carry no
+    // Content-Type, which the proxy accepts only for JPEG bytes.
+    frameOrigin: 'https://camaras.vigo.org/webcam/camv2.php?id=',
+    city: 'Vigo',
+    cityId: 'es-vigo',
+    provider: 'Concello de Vigo',
+    license: 'Concello de Vigo · datos abiertos (datos.vigo.org)',
+    anchor: { lat: 42.2406, lon: -8.7207 },
+    bounds: { south: 42.15, north: 42.3, west: -8.85, east: -8.55 },
+    defaultMax: 80,
+  }),
+  Object.freeze({
+    pack: 'calle30',
+    env: 'CALLE30',
+    format: 'calle30',
+    url: 'https://mc30.es/xml-data/camaras.xml',
+    // The list links www.mc30.es, which 301s to this host.
+    frameOrigin: 'https://mc30.es/xml-data/imagenes_camaras/',
+    city: 'Madrid',
+    cityId: 'madrid',
+    provider: 'Madrid Calle 30',
+    license: 'Madrid Calle 30 · Ayuntamiento de Madrid, datos abiertos (CC BY)',
+    anchor: MADRID_CENTER,
+    bounds: { south: 40.33, north: 40.53, west: -3.8, east: -3.6 },
+    defaultMax: 60,
+  }),
+  Object.freeze({
+    pack: 'meteogalicia',
+    env: 'METEOGALICIA',
+    format: 'meteogalicia',
+    url: 'https://servizos.meteogalicia.gal/mgrss/observacion/jsonCamaras.action',
+    frameOrigin: 'https://www.meteogalicia.gal/datosred/camaras/',
+    city: 'Galicia',
+    cityId: 'es-galicia',
+    provider: 'MeteoGalicia (Xunta de Galicia)',
+    license: 'MeteoGalicia · Xunta de Galicia (CC BY-SA 4.0)',
+    anchor: { lat: 42.8782, lon: -8.5448 }, // Santiago de Compostela
+    bounds: { south: 41.8, north: 43.85, west: -9.35, east: -6.7 },
+    defaultMax: 60,
+  }),
+]);
 
 /** One identifying User-Agent for the catalog fetches added by PANOPTES. */
 export const PANOPTES_CCTV_USER_AGENT =

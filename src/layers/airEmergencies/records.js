@@ -163,5 +163,7 @@ export function normalizeEmergencySnapshot(payload) {
     fetchedAt: finite(payload.fetchedAt),
     stale: payload.stale === true,
     partial: payload.partial === true,
+    // The proxy answered from another feed while adsb.lol was unavailable.
+    fallback: payload.fallback === 'opensky' ? 'opensky' : null,
   };
 }

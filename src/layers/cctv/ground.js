@@ -144,7 +144,7 @@ export function createGround({ state: layerState, services, parts, source }) {
       rearmGroundResolution(record);
       parts.geometry.updateRecordGeometry(record);
       parts.rendering.refreshCoverageStyles();
-      parts.presentation.notifyListeners();
+      parts.presentation.notifyListenersSoon();
     });
   }
 
@@ -224,7 +224,7 @@ export function createGround({ state: layerState, services, parts, source }) {
         applied += 1;
       }
     }
-    if (applied) parts.presentation.notifyListeners();
+    if (applied) parts.presentation.notifyListenersSoon();
   }
 
   /**
@@ -284,7 +284,7 @@ export function createGround({ state: layerState, services, parts, source }) {
     // regime) — resolve its DEM footprint for the new surface.
     const active = layerState._recordById.get(layerState._activeCameraId);
     if (active) void resolveFootprintGround(active);
-    parts.presentation.notifyListeners();
+    parts.presentation.notifyListenersSoon();
   }
   /**
    * Resolves the ground under the monitor plane's nine support points for the
@@ -344,7 +344,7 @@ export function createGround({ state: layerState, services, parts, source }) {
     };
     parts.geometry.applyFrustumGeometry(record, groundAltFor(record));
     parts.rendering.refreshCoverageStyles();
-    parts.presentation.notifyListeners();
+    parts.presentation.notifyListenersSoon();
   }
 
   return {

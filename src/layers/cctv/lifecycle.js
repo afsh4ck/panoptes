@@ -427,6 +427,8 @@ export function createLifecycle({
     destroy(viewer) {
       services.credits?.hideOsmCredit?.(layerState._viewer, 'cctv');
       layerState._sourceAbort?.abort();
+      clearTimeout(layerState._soonNotifyTimer);
+      layerState._soonNotifyTimer = null;
       if (typeof document !== 'undefined')
         document.removeEventListener(
           'visibilitychange',

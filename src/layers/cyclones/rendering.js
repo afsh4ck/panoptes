@@ -135,6 +135,19 @@ export function createCycloneRendering({ viewer, cesium: C, overlayHost }) {
             id: `cyclone:${storm.id}:center`,
             name: storm.name,
             position: center,
+            // Read by the INTEL event dossier (src/intel/eventIntel.js).
+            properties: {
+              name: storm.name,
+              classification: storm.classification,
+              basin: storm.basin,
+              windKt: storm.windKt,
+              pressureHpa: storm.pressureHpa,
+              movementDeg: storm.movement?.directionDegrees ?? null,
+              movementKt: storm.movement?.speedKt ?? null,
+              advisoryNumber: storm.advisoryNumber,
+              positionAt: storm.positionAt,
+              advisoryUrl: storm.advisoryUrl || null,
+            },
             point: {
               heightReference: C.HeightReference.CLAMP_TO_GROUND,
               disableDepthTestDistance: Number.POSITIVE_INFINITY,

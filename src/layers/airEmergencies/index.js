@@ -77,6 +77,8 @@ export function createAirEmergenciesLayer({
   let _lastError = null;
   let _stale = false;
   let _partial = false;
+  /** Feed that answered while adsb.lol was unavailable ('opensky'), or null. */
+  let _fallback = null;
   let _loading = false;
   let _enabled = false;
   let _holding = false;
@@ -252,6 +254,7 @@ export function createAirEmergenciesLayer({
         _lastError = null;
         _stale = snapshot?.stale === true;
         _partial = snapshot?.partial === true;
+        _fallback = snapshot?.fallback || null;
         syncRenderHold();
         notifyNewContacts(rows, at);
         render.governorRequestRender('air-emergencies');
@@ -312,8 +315,11 @@ export function createAirEmergenciesLayer({
       return {
         count: _count,
         countLabel: emergencyCountLabel(_count),
-        // adsb.lol is this layer's primary feed, not a fallback.
-        fallback: false,
+        // adsb.lol is the primary feed; the OpenSky snapshot stands in for it.
+        fallback: Boolean(_fallback),
+        ...(_fallback
+          ? { coverage: 'via OpenSky (adsb.lol unavailable)' }
+          : {}),
         // An empty answer is the normal case: say so instead of a bare dash.
         ...(_lastUpdate && _count === 0 && !_lastError
           ? { loadingLabel: 'no active emergencies' }

@@ -43,6 +43,23 @@ export function normalizeEarthquakeSnapshot(geojson) {
       mag,
       place: typeof properties.place === 'string' ? properties.place : null,
       time: Number.isFinite(properties.time) ? properties.time : null,
+      // Impact and review fields for the INTEL dossier (src/intel/eventIntel.js).
+      magType:
+        typeof properties.magType === 'string' ? properties.magType : null,
+      alert: ['green', 'yellow', 'orange', 'red'].includes(properties.alert)
+        ? properties.alert
+        : null,
+      tsunami: properties.tsunami === 1,
+      felt: Number.isFinite(properties.felt) ? properties.felt : null,
+      cdi: Number.isFinite(properties.cdi) ? properties.cdi : null,
+      mmi: Number.isFinite(properties.mmi) ? properties.mmi : null,
+      sig: Number.isFinite(properties.sig) ? properties.sig : null,
+      status: typeof properties.status === 'string' ? properties.status : null,
+      url:
+        typeof properties.url === 'string' &&
+        properties.url.startsWith('https://earthquake.usgs.gov/')
+          ? properties.url
+          : null,
     });
   }
   return rows;

@@ -95,6 +95,7 @@ export function createDisastersLayer({
             country: row.country,
             severity: row.severityText,
             updated: row.updatedMs,
+            link: row.link || null,
           },
         }),
       );

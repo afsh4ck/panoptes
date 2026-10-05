@@ -50,6 +50,16 @@ export function createMeshFloorSampler({
   const MAX_CAMERA_HEIGHT_M = 25_000;
   /** @type {Cesium.Cartographic} Scratch for probe coordinates. */
   const _scratchProbe = new Cesium.Cartographic();
+  /** Probe time allowed per window across every caller. Each probe renders a
+   *  pick pass and reads pixels back (10–20 ms on a real GPU), so a burst —
+   *  hundreds of cameras grounding as a city loads — spreads over frames
+   *  instead of freezing one; cells left out wait for a later call, exactly
+   *  like a probe that found no tiles yet. */
+  const PROBE_WINDOW_MS = 100;
+  const PROBE_BUDGET_MS = 12;
+  let probeWindowStart = -Infinity;
+  let probeWindowSpent = 0;
+  const probeClock = () => globalThis.performance?.now?.() ?? Date.now();
 
   // Regime tracking: mesh cells only apply while the photoreal (google-3d)
   // stack renders. main.js re-dispatches MapStackController.onChange as this
@@ -137,6 +147,12 @@ export function createMeshFloorSampler({
       ) {
         continue; // too far: tiles not streamed there, probe would be a guaranteed miss
       }
+      const probeStart = probeClock();
+      if (probeStart - probeWindowStart >= PROBE_WINDOW_MS) {
+        probeWindowStart = probeStart;
+        probeWindowSpent = 0;
+      }
+      if (probeWindowSpent >= PROBE_BUDGET_MS) break;
       let height;
       try {
         const carto = Cesium.Cartographic.fromDegrees(
@@ -149,6 +165,8 @@ export function createMeshFloorSampler({
         sampled += 1;
       } catch {
         continue; // scene mid-teardown — try again next poll
+      } finally {
+        probeWindowSpent += probeClock() - probeStart;
       }
       if (!Number.isFinite(height)) continue; // tiles not loaded yet — no negative latch
       // Round 5: a REAL Re:Earth prior is REQUIRED before any sample latches.

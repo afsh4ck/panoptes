@@ -17,6 +17,34 @@ export function catalogCounts(cameras = []) {
   return { total: cameras.length, live };
 }
 
+/** Most cameras the picker lists at once; the search narrows the rest. */
+export const PICKER_MAX = 400;
+
+/**
+ * The cameras the picker lists: those matching the filter and query, in
+ * catalog order, at most PICKER_MAX, with `keepId` (the selected camera)
+ * always included.
+ */
+export function pickerCameras(
+  cameras = [],
+  { liveOnly = false, query = '', keepId = '', max = PICKER_MAX } = {},
+) {
+  const shown = [];
+  let kept = !keepId;
+  for (const camera of cameras) {
+    if (!cameraVisible(camera, { liveOnly, query })) continue;
+    if (shown.length < max) {
+      shown.push(camera);
+      if (camera.id === keepId) kept = true;
+    } else if (kept) break;
+  }
+  if (!kept) {
+    const keep = cameras.find((camera) => camera.id === keepId);
+    if (keep) shown.unshift(keep);
+  }
+  return shown;
+}
+
 /** Whether a picker entry stays visible for the current filter and query. */
 export function cameraVisible(camera, { liveOnly = false, query = '' } = {}) {
   if (!camera) return false;
@@ -60,17 +88,34 @@ export function createCctvCatalogBar({ document, getLayer, setLiveOnly }) {
   let query = '';
   let unsubscribe = null;
   let frame = 0;
+  /** What the picker was last filtered for; the layer notifies far more
+   * often than the catalog, the filter or the query change. */
+  let catalogKey = '';
+  let appliedKey = '';
 
+  /** The picker holds the matching cameras only, up to PICKER_MAX. */
   function applyPicker() {
+    const key = `${catalogKey}|${liveOnly}|${query}`;
+    if (key === appliedKey) return;
+    appliedKey = key;
     view.cancelAnimationFrame(frame);
     frame = view.requestAnimationFrame(() => {
-      for (const option of select.options) {
-        const visible = cameraVisible(byId.get(option.value), {
-          liveOnly,
-          query,
-        });
-        if (option.hidden === visible) option.hidden = !visible;
+      const selected = select.value;
+      const fragment = document.createDocumentFragment();
+      const shown = pickerCameras(cameras, {
+        liveOnly,
+        query,
+        keepId: selected,
+      });
+      for (const camera of shown) {
+        const option = document.createElement('option');
+        option.value = camera.id;
+        option.textContent = `${camera.city} · ${camera.name}`;
+        fragment.appendChild(option);
       }
+      select.replaceChildren(fragment);
+      if (selected && byId.has(selected)) select.value = selected;
+      else select.selectedIndex = -1;
     });
   }
 
@@ -83,8 +128,15 @@ export function createCctvCatalogBar({ document, getLayer, setLiveOnly }) {
   }
 
   function onState(state) {
-    if (Array.isArray(state?.cameras) && state.cameras !== cameras) {
-      cameras = state.cameras;
+    const next = Array.isArray(state?.cameras) ? state.cameras : null;
+    // Each notification carries a fresh array; re-index only when the
+    // catalog itself changed.
+    const nextKey = next
+      ? `${next.length}|${next[0]?.id || ''}|${next.at(-1)?.id || ''}`
+      : '';
+    if (next && nextKey !== catalogKey) {
+      catalogKey = nextKey;
+      cameras = next;
       byId = new Map(cameras.map((camera) => [camera.id, camera]));
       const { total, live } = catalogCounts(cameras);
       countEl.textContent = fmt.format(total);

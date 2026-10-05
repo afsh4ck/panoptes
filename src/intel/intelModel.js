@@ -6,7 +6,7 @@
  * Pure data only: no DOM, no Cesium, no fetch. Every producer keeps its raw
  * payload on `raw` so a renderer can offer "copy JSON" without a second fetch.
  *
- * @typedef {'aircraft'|'satellite'|'vessel'|'launch'|'site'} IntelKind
+ * @typedef {'aircraft'|'satellite'|'vessel'|'launch'|'site'|'event'} IntelKind
  * @typedef {'neutral'|'warn'|'alert'|'ok'} BadgeTone
  * @typedef {{label: string, tone: BadgeTone}} IntelBadge
  * @typedef {{src: string, link: string|null, credit: string|null}} IntelPhoto
@@ -34,6 +34,7 @@ export const INTEL_KINDS = Object.freeze([
   'vessel',
   'launch',
   'site',
+  'event',
 ]);
 export const BADGE_TONES = Object.freeze(['neutral', 'warn', 'alert', 'ok']);
 export const DEFAULT_INTEL_ACCENT = '#f5a524';

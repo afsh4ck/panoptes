@@ -160,3 +160,40 @@ test('rejects non-GET requests and rate-limits a chatty client', async () => {
   assert.ok(limited, 'the per-client limiter eventually answers 429');
   assert.equal(limited.headers['Retry-After'], '60');
 });
+
+test('while adsb.lol cools down, a newer OpenSky snapshot answers instead of the stale cache', async () => {
+  let clock = 1000;
+  let fail = false;
+  let snapshot = null;
+  const plugin = emergencySquawkProxy({
+    now: () => clock,
+    squawkSnapshot: () => snapshot,
+    fetchImpl: async (url) =>
+      fail
+        ? jsonResponse({}, { status: 429, retryAfter: '60' })
+        : jsonResponse({ ac: [ac('a00001', url.slice(-4))] }),
+  });
+  const handler = mount(plugin);
+  await call(handler);
+  clock = 20_000;
+  fail = true;
+  assert.equal((await call(handler)).headers['X-ADS-B-Cache'], 'STALE');
+
+  snapshot = { at: 19_000, ac: [ac('b00001', '7700', { lat: 40, lon: -3 })] };
+  const viaOpenSky = await call(handler);
+  assert.equal(viaOpenSky.status, 200);
+  assert.equal(viaOpenSky.headers['X-ADS-B-Cache'], 'FALLBACK');
+  assert.equal(viaOpenSky.headers['X-ADS-B-Fallback'], 'opensky');
+  assert.equal(viaOpenSky.json.fallback, 'opensky');
+  assert.deepEqual(
+    viaOpenSky.json.rows.map((row) => [row.hex, row.squawk]),
+    [['b00001', '7700']],
+  );
+
+  snapshot = { at: 500, ac: [ac('c00001', '7700')] };
+  assert.equal(
+    (await call(handler)).headers['X-ADS-B-Cache'],
+    'STALE',
+    'an older snapshot never replaces newer adsb.lol rows',
+  );
+});

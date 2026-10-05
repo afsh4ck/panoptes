@@ -29,6 +29,9 @@ export function createHealth({ state: layerState, services, parts, source }) {
           ).toLowerCase(),
           label: String(row.label || row.provider || ''),
           message: String(row.message || ''),
+          // When the publisher's still last changed, and whether it stopped.
+          frameTime: Number.isFinite(row.frameTime) ? row.frameTime : null,
+          frozen: row.frozen === true,
           updatedAt: parts.model.safeNumber(row.updatedAt, now),
         });
       }

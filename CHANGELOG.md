@@ -1,5 +1,42 @@
 # Changelog
 
+- Cameras: about 2,500 more official cameras. North Carolina (DriveNC),
+  Connecticut (CTroads) and eight Canadian 511 sites (Alberta,
+  Saskatchewan, Manitoba, Nova Scotia, New Brunswick, Newfoundland and
+  Labrador, PEI, Yukon) join the IBI 511 packs; Iceland (Vegagerðin, 496
+  webcams, bearings read from their captions) and Queensland (QLDTraffic,
+  with `QLDTRAFFIC_API_KEY`) are new packs. 511 cameras named "N/A" or by a
+  device code now show their location. The default catalog cap rises to
+  21,500.
+- INTEL: earthquakes, FIRMS fires, disaster alerts, conflict events,
+  cyclones and GPS-interference cells open an event dossier (PAGER alert,
+  tsunami flag, intensities, FRP, Saffir-Simpson category, official links);
+  mapped sites with a Wikidata id show its facts and Commons photo; every
+  dossier lists what the enabled layers hold within 50 km, and a nearby
+  camera opens with one click.
+- Cameras: Spanish highway cameras face along their road (OpenStreetMap
+  geometry plus DGT travel direction), each still shows its real age
+  ("IMG 4 MIN") and a feed unchanged for an hour reads FROZEN; a slow
+  provider is retried before it is hidden; the catalog loads at server start,
+  ships brotli-compressed with each licence once (9.2 MB → 1 MB) and a
+  stale catalog keeps serving while it refreshes.
+- Air emergencies fall back to the OpenSky snapshot while adsb.lol is rate
+  limited.
+- Faster start with the camera layer on: main-thread long tasks during the
+  first minute over Madrid drop from 33.7 s to 5.1 s (camera picker holds
+  the matching cameras only, camera state built lazily, rendered-surface
+  probes spread over frames, background notifications coalesced).
+- Add about 2,600 open cameras across Spain: the DGT road cameras from the
+  National Access Point (DATEX II, every province outside Catalonia and the
+  Basque Country), the Servei Català de Trànsit list with the Barcelona and
+  Terrassa city cameras, Open Data Euskadi (Trafikoa and Bizkaia; positions
+  converted from UTM 30N), and city and regional feeds for Málaga,
+  Vitoria-Gasteiz, Vigo, Madrid Calle 30 and the MeteoGalicia webcams. Each
+  pack has its own `CCTV_<NAME>_ENABLED` and `CCTV_<NAME>_MAX_SOURCES`. The
+  default catalog cap rises from 16,000 to 18,500 so the new cameras do not
+  displace other regions. The frame proxy now keeps a frame sent without a
+  Content-Type when its bytes are a JPEG (Vigo), and reports Calle 30's
+  "$Failed" card as a publisher placeholder.
 - Add the City of Madrid traffic cameras (Informo, Ayuntamiento de Madrid): about
   357 public cameras from the keyless KML, still frames refreshed about every
   three minutes, with surveyed poses for Callao (01314) and San Bernardo (01335)

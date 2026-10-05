@@ -85,6 +85,7 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
           mag,
           place,
           time,
+          ...impact
         } of rows) {
           count++;
           const baseRadius = Math.pow(2, mag) * 1000;
@@ -118,6 +119,7 @@ export function createEarthquakesLayer({ source, overlayHost } = {}) {
                 place,
                 time,
                 depth: depthKm,
+                ...impact,
               },
             }),
           );

@@ -28,6 +28,20 @@ function frameUrlFor(camera, refreshMs = ACTIVE_FRAME_REFRESH_MS) {
 function mediaUrlFor(camera) {
   return `${MEDIA_ENDPOINT}/${encodeURIComponent(camera.id)}?ts=${Math.floor(Date.now() / 15000)}`;
 }
+/**
+ * `/api/cctv/sources` ships each licence once in `licenses`; rows point at it
+ * with `licenseRef`. Restore `license` on every row (in place).
+ */
+export function expandCatalogPayload(payload) {
+  const licenses = Array.isArray(payload?.licenses) ? payload.licenses : [];
+  if (!licenses.length) return payload;
+  for (const source of payload.sources) {
+    if (!source || source.license !== undefined) continue;
+    const license = licenses[source.licenseRef];
+    if (typeof license === 'string') source.license = license;
+  }
+  return payload;
+}
 /** Supply catalog/health records and the existing registered camera URL families. */
 export function createCctvSource({
   fetchImpl = (...args) => globalThis.fetch(...args),
@@ -43,8 +57,10 @@ export function createCctvSource({
     return payload;
   }
   return {
-    getCatalog(options) {
-      return read('/api/cctv/sources', 'sources', options);
+    async getCatalog(options) {
+      return expandCatalogPayload(
+        await read('/api/cctv/sources', 'sources', options),
+      );
     },
     getHealth(options) {
       return read('/api/cctv/health', 'cameras', options);

@@ -1,4 +1,5 @@
 import { initFirstRunExperience } from '../firstRunExperience.js';
+import { setSplitFlapPaused } from '../splitFlap.js';
 
 /** Reveal welcome controls only after restoration and the loading transition. */
 export function startApplicationChrome({
@@ -17,6 +18,8 @@ export function startApplicationChrome({
     resolveDelay = resolve;
   });
   const delayTimer = setTimeout(resolveDelay, 1000);
+  // Chips repaint constantly while the loader covers them; skip their cascade.
+  setSplitFlapPaused(true);
   const revealFirstRun = () => {
     if (disposed || signal.aborted || firstRun) return;
     firstRun = initializeWelcome?.({ styleManager, dataManager });
@@ -29,6 +32,7 @@ export function startApplicationChrome({
     })
     .then(() => {
       if (disposed || signal.aborted) return;
+      setSplitFlapPaused(false);
       loadingScreen.classList.add('hidden');
       loadingScreen.addEventListener('transitionend', revealFirstRun, {
         once: true,
@@ -44,6 +48,7 @@ export function startApplicationChrome({
   );
   return async () => {
     disposed = true;
+    setSplitFlapPaused(false);
     clearTimeout(delayTimer);
     clearTimeout(revealTimer);
     resolveDelay();

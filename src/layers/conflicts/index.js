@@ -99,6 +99,7 @@ export function createConflictsLayer({
             mentions: row.mentions,
             fatalities: row.fatalities,
             time: row.timeMs,
+            url: row.url || null,
           },
         }),
       );

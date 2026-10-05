@@ -259,3 +259,23 @@ test('rejected snapshot responses abort the upstream download', async () => {
     assert.equal(signal.aborted, true);
   }
 });
+
+test('an upstream frame with no Content-Type is served only when its bytes are a JPEG', async () => {
+  const untyped = (bytes) => async () => new Response(new Uint8Array(bytes), { status: 200 });
+  const jpeg = await fetchCctvImageFromUpstream('https://example.com/frame', {
+    timeoutMs: 1000,
+    fetchImpl: untyped([0xff, 0xd8, 0xff, 0xe0, 1, 2]),
+  });
+  assert.equal(jpeg?.ok, true);
+  assert.equal(jpeg.contentType, 'image/jpeg');
+  const html = await fetchCctvImageFromUpstream('https://example.com/frame', {
+    timeoutMs: 1000,
+    fetchImpl: untyped([...Buffer.from('<html>')]),
+  });
+  assert.equal(html?.ok, false);
+  const declared = await fetchCctvImageFromUpstream('https://example.com/frame', {
+    timeoutMs: 1000,
+    fetchImpl: async () => new Response(new Uint8Array([0xff, 0xd8, 0xff]), { status: 200, headers: { 'Content-Type': 'text/html' } }),
+  });
+  assert.equal(declared?.ok, false, 'a declared non-image type is still refused');
+});

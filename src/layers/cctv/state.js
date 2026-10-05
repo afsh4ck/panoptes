@@ -115,6 +115,8 @@ export function createState({ services }) {
   layerState._gizmo = null;
 
   layerState._lastTransientNotifyAt = 0;
+  layerState._lastSoonNotifyAt = 0;
+  layerState._soonNotifyTimer = null;
 
   // Cached handle on the active Google Photorealistic 3D Tileset, discovered
   // lazily from scene.primitives. Shared mesh-floor sampling is gated on its

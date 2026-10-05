@@ -348,6 +348,10 @@ export async function fetchCctvMediaUpstream(
   }
 }
 
+/** JPEG start-of-image marker. */
+const isJpegBytes = (body) =>
+  body.length >= 3 && body[0] === 0xff && body[1] === 0xd8 && body[2] === 0xff;
+
 /**
  * Fetch and decode a TxDOT ITS / TransGuide snapshot.
  *
@@ -416,7 +420,7 @@ export async function fetchTxdotSnapshot(
     }
     const body = Buffer.from(snippet, 'base64');
     if (body.length < 4 || body.length > maxBytes) return null;
-    if (body[0] !== 0xff || body[1] !== 0xd8 || body[2] !== 0xff) return null;
+    if (!isJpegBytes(body)) return null;
     return { ok: true, body, contentType: 'image/jpeg' };
   } catch {
     return null;
@@ -545,17 +549,27 @@ export async function fetchCctvImageFromUpstream(
     );
     if (!upstream) return null;
     const contentType = upstream.headers.get('content-type') || '';
-    if (!upstream.ok || !contentType.startsWith('image/')) {
+    // A frame sent with no Content-Type at all (Concello de Vigo) is kept only
+    // if its bytes are a JPEG; a declared non-image type is still refused.
+    const untyped = upstream.ok && !contentType.trim();
+    if (!upstream.ok || (!untyped && !contentType.startsWith('image/'))) {
       controller.abort();
       // Report the refusal so the panel can say the publisher blocked it.
       return { ok: false, status: upstream.status };
     }
     const body = await readCappedResponseBytes(upstream, maxBytes);
     if (!body) return null;
+    if (untyped && !isJpegBytes(body)) return { ok: false, status: 'untyped' };
     // A stock "no live feed" card is not a frame.
     if (isPublisherPlaceholder(body))
       return { ok: false, status: 'placeholder' };
-    return { ok: true, body, contentType };
+    return {
+      ok: true,
+      body,
+      contentType: untyped ? 'image/jpeg' : contentType,
+      // When the publisher dates the image; NaN when it does not.
+      lastModified: Date.parse(upstream.headers.get('last-modified') || ''),
+    };
   } catch {
     return null;
   } finally {

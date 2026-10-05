@@ -272,6 +272,20 @@
 .intel-rows dd a:focus-visible {
   text-decoration: underline;
 }
+/* NEARBY rows: fly to the record, or open the camera. */
+.intel-rows dd .intel-row-target {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: var(--intel-accent);
+  cursor: pointer;
+}
+.intel-rows dd .intel-row-target:hover,
+.intel-rows dd .intel-row-target:focus-visible {
+  text-decoration: underline;
+}
 
 .intel-links {
   display: flex;

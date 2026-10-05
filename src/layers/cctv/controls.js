@@ -274,6 +274,28 @@ export function createControls({ state: layerState, services, parts, source }) {
     },
 
     /**
+     * The loaded cameras as plain records for analyst consumers (exports,
+     * the INTEL panel's NEARBY section). Empty while the layer is disabled.
+     * @param {number} [maxCount=20000]
+     * @returns {Array<{id: string, name: string, city: string, provider: string, lat: number, lon: number, feedType: string}>}
+     */
+    getAnalystRecords(maxCount = 20000) {
+      if (!layerState._enabled) return [];
+      const limit = Number.isFinite(maxCount)
+        ? Math.max(1, Math.floor(maxCount))
+        : 20000;
+      return layerState._records.slice(0, limit).map(({ camera }) => ({
+        id: camera.id,
+        name: camera.name,
+        city: camera.city,
+        provider: camera.provider,
+        lat: camera.lat,
+        lon: camera.lon,
+        feedType: camera.feedType,
+      }));
+    },
+
+    /**
      * Returns basic layer statistics, including initial-load progress while
      * the staggered geometry queue is draining.
      * @returns {{ count: number, lastUpdate: number|null, error: string|null, loading: boolean, loadingLoaded: number, loadingTotal: number }}

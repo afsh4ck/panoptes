@@ -31,6 +31,7 @@ function fixture() {
       events.push('welcome');
       return { destroy: () => events.push('welcome:destroy') };
     },
+    setSplitFlapPaused() {},
     async initKeySetup() {
       return { destroy: () => events.push('settings:destroy') };
     },

@@ -494,3 +494,68 @@ test('badge text and export names follow the subject', () => {
     'intel-site-way-12-34.json',
   );
 });
+
+test('event layers open event dossiers and sites carry their Wikidata id', () => {
+  for (const layerId of [
+    'earthquakes',
+    'local-firms',
+    'disaster-alerts',
+    'conflict-events',
+    'weather-cyclones',
+    'gps-interference',
+  ])
+    assert.equal(kindForLayer(layerId), 'event');
+  const site = subjectFromEntityRecord({
+    id: 'base-1',
+    layerId: 'strategic-military-bases',
+    properties: { name: 'Malmen', tags: { wikidata: 'Q6744357' } },
+  });
+  assert.equal(requestDescriptorFor(site).wikidata, 'Q6744357');
+  const event = subjectFromEntityRecord({
+    id: 'earthquake:us1',
+    layerId: 'earthquakes',
+    latitude: 1,
+    longitude: 2,
+    properties: {},
+  });
+  assert.deepEqual(requestDescriptorFor(event), {
+    kind: 'event',
+    key: 'event:earthquakes:earthquake:us1',
+    layerId: 'earthquakes',
+    id: 'earthquake:us1',
+  });
+});
+
+test('NEARBY rows keep their in-app targets and render as buttons', () => {
+  const subject = subjectFromEntityRecord({
+    id: 'q',
+    layerId: 'earthquakes',
+    latitude: 40,
+    longitude: -3,
+    properties: {},
+  });
+  const model = normalizeIntelModel(
+    {
+      kind: 'event',
+      title: 'M4',
+      sections: [
+        {
+          heading: 'NEARBY · 50 KM',
+          rows: [
+            { label: 'Cameras', value: 'Callao · 400 m N', fly: { lat: 40.42, lon: -3.7 }, camera: 'madrid-01314' },
+            { label: 'Sites', value: 'Base · 9 km E', fly: { lat: 95, lon: 0 } },
+          ],
+        },
+      ],
+    },
+    subject,
+  );
+  const [camera, site] = model.sections[0].rows;
+  assert.deepEqual(camera.fly, { lat: 40.42, lon: -3.7 });
+  assert.equal(camera.camera, 'madrid-01314');
+  assert.equal(site.fly, undefined, 'an impossible position is dropped');
+  const html = vnodeToHtml(
+    renderIntelView({ subject, model, state: 'ready', nowMs: 0 }),
+  );
+  assert.match(html, /<button type="button" class="intel-row-target" data-intel-camera="madrid-01314" data-intel-fly-lat="40.42" data-intel-fly-lon="-3.7">Callao · 400 m N<\/button>/);
+});

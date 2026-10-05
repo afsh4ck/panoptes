@@ -4,6 +4,7 @@ import * as mgrsModule from 'mgrs';
 
 const mgrsForward = mgrsModule.forward || mgrsModule.default?.forward;
 import { cleanText, createIntelModel, intelRow } from './intelModel.js';
+import { siteWikidataRows } from './siteWikidata.js';
 
 /**
  * @module siteIntel
@@ -92,9 +93,14 @@ function mgrsFor(lat, lon) {
  * @param {object} input
  * @param {object} input.subject Panel subject (`{id, layerId, label}`).
  * @param {object|null} input.live Selected context record.
+ * @param {object|null} [input.payload] Wikidata facts (siteWikidata.js), when the site has an id.
  * @returns {object} IntelModel.
  */
-export function buildSiteIntelModel({ subject = {}, live = null } = {}) {
+export function buildSiteIntelModel({
+  subject = {},
+  live = null,
+  payload = null,
+} = {}) {
   const record = live || subject.record || {};
   const props = record.properties || {};
   const tags = props.tags && typeof props.tags === 'object' ? props.tags : {};
@@ -167,6 +173,8 @@ export function buildSiteIntelModel({ subject = {}, live = null } = {}) {
       label: 'Wikidata',
       href: `https://www.wikidata.org/wiki/${wikidata}`,
     });
+  if (payload?.wikipedia?.href)
+    links.push({ label: 'Wikipedia', href: payload.wikipedia.href });
   links.push({
     label: 'Wikipedia search',
     href: `https://en.wikipedia.org/w/index.php?search=${encodeURIComponent(cleanText(tags.name_en) || name)}`,
@@ -190,23 +198,30 @@ export function buildSiteIntelModel({ subject = {}, live = null } = {}) {
     kind: 'site',
     id: cleanText(record.id || subject.id),
     title: name,
-    subtitle: [cleanText(props.subtitle) || klass, cleanText(props.country)]
+    subtitle: [
+      cleanText(props.subtitle) || klass || cleanText(payload?.description),
+      cleanText(props.country),
+    ]
       .filter(Boolean)
       .join(' · '),
     accent: LAYER_ACCENTS[layerId] || '#f5a524',
     badges,
-    photo: null,
+    photo: payload?.image || null,
     sections: [
       { heading: 'IDENTITY', rows: identity },
       { heading: 'DETAILS', rows: details },
+      { heading: 'WIKIDATA', rows: siteWikidataRows(payload) },
       { heading: 'LOCATION', rows: location },
       { heading: 'PROVENANCE', rows: provenance },
     ],
     links,
     raw: record,
-    fetchedAt: Date.now(),
+    fetchedAt: payload?.fetchedAt || Date.now(),
     notes: [
       'Mapped context from public datasets. It does not confirm capability, occupancy or operational status.',
+      ...(payload
+        ? ['Wikidata facts are community-edited; check the linked sources.']
+        : []),
     ],
   });
 }

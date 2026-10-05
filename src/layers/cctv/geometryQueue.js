@@ -275,8 +275,8 @@ export function createGeometryQueue({
       }
     }
     if (!layerState._geoQueueTimer && layerState._geoQueue.length) {
-      layerState._geoProgressNotifier = createGeometryProgressNotifier(
-        parts.presentation.notifyListeners,
+      layerState._geoProgressNotifier = createGeometryProgressNotifier(() =>
+        parts.presentation.notifyListeners({ reuseCameraList: true }),
       );
       layerState._geoQueueTimer = setTimeout(processGeometryBatch, 0);
     }
@@ -320,8 +320,8 @@ export function createGeometryQueue({
     layerState._geoLoadTotal = layerState._geoQueue.length;
     layerState._geoLoadDone = 0;
     layerState._geoLoading = true;
-    layerState._geoProgressNotifier = createGeometryProgressNotifier(
-      parts.presentation.notifyListeners,
+    layerState._geoProgressNotifier = createGeometryProgressNotifier(() =>
+      parts.presentation.notifyListeners({ reuseCameraList: true }),
     );
     layerState._geoQueueTimer = setTimeout(processGeometryBatch, 0);
   }

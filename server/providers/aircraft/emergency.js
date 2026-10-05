@@ -7,6 +7,7 @@ import {
   coalesceProxyRequest,
 } from '../common/http.js';
 import { makeRateLimiter, clientKey } from '../common/rate-limit.js';
+import { openSkySquawkSnapshot } from './opensky.js';
 
 /**
  * Vite plugin: adsb.lol emergency-squawk proxy (7500 / 7600 / 7700) with a
@@ -15,16 +16,19 @@ import { makeRateLimiter, clientKey } from '../common/rate-limit.js';
  * Serves GET /api/adsblol/emergency from the three public squawk feeds. The
  * three fetches run together; when one fails the response is marked
  * `partial` rather than failing the alert surface. When every feed fails —
- * a thrown fetch OR a non-OK status such as 429 — the proxy serves its cached
- * body as STALE and backs off from upstream for the Retry-After period
- * (bounded), mirroring `adsb-lol.js` so one rate limit is never hammered
- * mid-cooldown. A failure with nothing cached is relayed as 502.
+ * a thrown fetch OR a non-OK status such as 429 — the proxy backs off from
+ * upstream for the Retry-After period (bounded), mirroring `adsb-lol.js` so
+ * one rate limit is never hammered mid-cooldown. Meanwhile it answers from
+ * the global OpenSky snapshot the flights layer already holds when that is
+ * newer than its own cache (no extra upstream call), else serves its cached
+ * body as STALE. A failure with neither is relayed as 502.
  *
  * @returns {import('vite').Plugin}
  */
 export function emergencySquawkProxy({
   fetchImpl = (...args) => globalThis.fetch(...args),
   now = () => Date.now(),
+  squawkSnapshot = openSkySquawkSnapshot,
 } = {}) {
   const CACHE_MS = 12000;
   const RATE_LIMIT_COOLDOWN_MS = 30000;
@@ -132,6 +136,34 @@ export function emergencySquawkProxy({
   const serveStale = (res, extra) =>
     serve(res, 200, { ...cache.body, stale: true }, 'STALE', extra);
 
+  /**
+   * Answer from the OpenSky snapshot when it is newer than the cached
+   * adsb.lol body. OpenSky carries no registration or type, so the rows are
+   * thinner; the body says where they came from.
+   */
+  function serveOpenSkyFallback(res, extra) {
+    const snapshot = squawkSnapshot(EMERGENCY_SQUAWKS, { now: now() });
+    if (!snapshot || (cache && cache.at >= snapshot.at)) return false;
+    const body = {
+      rows: normalizeEmergencyFeeds(
+        [{ squawk: null, payload: { ac: snapshot.ac } }],
+        snapshot.at,
+      ),
+      fetchedAt: snapshot.at,
+      stale: false,
+      partial: false,
+      fallback: 'opensky',
+      sources: Object.fromEntries(
+        EMERGENCY_SQUAWKS.map((squawk) => [squawk, 'opensky']),
+      ),
+    };
+    serve(res, 200, body, 'FALLBACK', {
+      'X-ADS-B-Fallback': 'opensky',
+      ...extra,
+    });
+    return true;
+  }
+
   async function handler(req, res) {
     if (req.method !== 'GET') {
       serve(res, 405, { error: 'method_not_allowed' }, 'NONE', {
@@ -153,11 +185,13 @@ export function emergencySquawkProxy({
       }
       if (at < cooldownUntil) {
         const retryAfter = String(Math.ceil((cooldownUntil - at) / 1000));
+        const cooling = {
+          'X-ADS-B-Upstream-Status': String(cooldownStatus),
+          'X-ADS-B-Retry-After-Seconds': retryAfter,
+        };
+        if (serveOpenSkyFallback(res, cooling)) return;
         if (cache) {
-          serveStale(res, {
-            'X-ADS-B-Upstream-Status': String(cooldownStatus),
-            'X-ADS-B-Retry-After-Seconds': retryAfter,
-          });
+          serveStale(res, cooling);
           return;
         }
         serve(res, 503, { error: 'adsb.lol upstream cooling down' }, 'NONE', {
@@ -171,6 +205,7 @@ export function emergencySquawkProxy({
     } catch (error) {
       if (error?.status === 429 || error?.status >= 500) startCooldown(error);
       console.warn('[adsb.lol Emergency Proxy]', error?.message || error);
+      if (serveOpenSkyFallback(res)) return;
       if (cache) {
         serveStale(res);
         return;

@@ -55,19 +55,21 @@ export function _renderCctvState(state) {
   }
 
   if (this._cctvSelect) {
-    const shouldRebuild =
-      this._cctvSelect.options.length !== cameras.length ||
-      cameras.some(
-        (cam, idx) => this._cctvSelect.options[idx]?.value !== cam.id,
-      );
-    if (shouldRebuild) {
-      this._cctvSelect.innerHTML = '';
-      for (const camera of cameras) {
-        const option = document.createElement('option');
-        option.value = camera.id;
-        option.textContent = `${camera.city} · ${camera.name}`;
-        this._cctvSelect.appendChild(option);
-      }
+    // The catalog bar fills the picker with the cameras matching its filter
+    // (src/ui/cctvCatalogBar.js) — tens of thousands of <option>s made every
+    // layout cost hundreds of milliseconds. Here only the active camera is
+    // kept selectable.
+    if (
+      activeId &&
+      activeCamera &&
+      !Array.from(this._cctvSelect.options).some(
+        (opt) => opt.value === activeId,
+      )
+    ) {
+      const option = document.createElement('option');
+      option.value = activeId;
+      option.textContent = `${activeCamera.city} · ${activeCamera.name}`;
+      this._cctvSelect.prepend(option);
     }
     this._cctvSelect.disabled = !enabled || cameras.length === 0;
     if (
@@ -151,11 +153,14 @@ export function _renderCctvState(state) {
         : '';
       // A partner-supplied feed inside a pack names its owner here.
       const credit = activeCamera.credit ? ` · ${activeCamera.credit}` : '';
+      const freshness = activeCamera.frameFreshness
+        ? ` · ${activeCamera.frameFreshness}`
+        : '';
       const calBadge = activeCamera.calBadge
         ? this._calBadgeLabel(activeCamera.calBadge)
         : '';
       const projLabel = state?.showProjection !== false ? 'MONITOR' : 'OFF';
-      this._cctvMeta.textContent = `${activeCamera.city} · HDG ${Math.round(activeCamera.headingDeg)}° · FOV ${Math.round(activeCamera.fovDeg)}° · RANGE ${Math.round(activeCamera.rangeM)}m · ${projLabel}${calBadge ? ` · ${calBadge}` : ''} · ${provider}${credit}${statusMsg}`;
+      this._cctvMeta.textContent = `${activeCamera.city} · HDG ${Math.round(activeCamera.headingDeg)}° · FOV ${Math.round(activeCamera.fovDeg)}° · RANGE ${Math.round(activeCamera.rangeM)}m · ${projLabel}${calBadge ? ` · ${calBadge}` : ''} · ${provider}${credit}${freshness}${statusMsg}`;
     } else if (cameras.length > 0) {
       this._cctvMeta.textContent = enabled
         ? `${cameras.length} cameras loaded · click a camera to activate`
