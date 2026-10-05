@@ -362,6 +362,14 @@ export const DATA_CREDITS = [
       '<a href="https://www.511ny.org/" target="_blank" rel="noopener">511NY</a> — NYSDOT and NYC DOT',
   },
   {
+    key: 'cars-511-cctv',
+    html:
+      'Live CCTV video (Colorado, Minnesota, Indiana): ' +
+      '<a href="https://www.cotrip.org/" target="_blank" rel="noopener">COtrip (CDOT)</a>, ' +
+      '<a href="https://511mn.org/" target="_blank" rel="noopener">511MN (MnDOT)</a>, ' +
+      '<a href="https://511in.org/" target="_blank" rel="noopener">TrafficWise (INDOT)</a>',
+  },
+  {
     key: 'iceland-cctv',
     html:
       'CCTV cameras &amp; frames (Iceland): ' +

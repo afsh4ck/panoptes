@@ -117,6 +117,21 @@
       <a class="scroll-hint" href="#sources" aria-label="Bajar"><i class="ph ph-caret-double-down"></i></a>
     </section>
 
+    <!-- ─────────────── FILM ─────────────── -->
+    <section class="film" id="film">
+      <div class="wrap">
+        <button type="button" class="film-card rv" data-film aria-label="Ver la película de PANOPTES con sonido">
+          <img src="assets/video/panoptes-film-poster.jpg" alt="" width="1920" height="1080" loading="lazy" decoding="async" />
+          <span class="film-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <span class="film-play" aria-hidden="true"><i class="ph-fill ph-play"></i></span>
+          <span class="film-meta mono" aria-hidden="true">
+            <span class="film-rec"></span>
+            <span data-i18n="film.label">La película · 0:57 · 4K con sonido</span>
+          </span>
+        </button>
+      </div>
+    </section>
+
     <!-- ─────────────── SOURCES MARQUEE ─────────────── -->
     <section class="marquee" id="sources" aria-label="Fuentes de datos">
       <div class="marquee-track">
@@ -435,6 +450,12 @@
     </div>
   </footer>
 
+  <div class="film-modal" role="dialog" aria-modal="true" aria-label="Película de PANOPTES" hidden>
+    <button type="button" class="film-close" aria-label="Cerrar"><i class="ph ph-x"></i></button>
+    <video controls playsinline preload="none"
+      data-landscape="assets/video/panoptes-film-4k.mp4" data-landscape-poster="assets/video/panoptes-film-poster.jpg"
+      data-portrait="assets/video/panoptes-film-4k-vertical.mp4" data-portrait-poster="assets/video/panoptes-film-poster-vertical.jpg"></video>
+  </div>
   <div class="lightbox" hidden><button type="button" aria-label="Cerrar"><i class="ph ph-x"></i></button><img alt="" /></div>
 
   <script src="eyes.js"></script>

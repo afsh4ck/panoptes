@@ -4,6 +4,7 @@ import {
   DEFAULT_CCTV_SOURCE_FILE,
   CCTV_SOURCE_CACHE_MS,
   IBI_511_SITES,
+  CARS_511_SITES,
   SPAIN_CITY_SITES,
 } from './constants.js';
 import {
@@ -12,6 +13,7 @@ import {
   loadHongKongSourcesFromOpenData,
   loadNztaSourcesFromOpenData,
   loadNy511Sources,
+  loadCars511Sources,
   loadIcelandSourcesFromVegagerdin,
   loadQldSourcesFromQldTraffic,
   loadMadridSourcesFromInformo,
@@ -25,7 +27,11 @@ import { loadGroundHeights, joinGroundHeights } from './groundHeights.js';
 import { loadRoadHeadings, joinRoadHeadings } from './roadHeadings.js';
 import { normalizeSourceItem } from './normalize.js';
 import { fetchCctvImageFromUpstream } from './media.js';
-import { filterReachableProviders } from './reachability.js';
+import {
+  filterReachableProviders,
+  downgradeUnreachableStreams,
+} from './reachability.js';
+import { fetchHlsBytes, HLS_LIMITS } from './stream.js';
 import {
   isVideoFeedType,
   normalizeFeedType,
@@ -40,6 +46,15 @@ async function probeCameraFrame(source, { timeoutMs = 8000 } = {}) {
   if (!candidate) return true; // video-only: judged by the player, not here
   const result = await fetchCctvImageFromUpstream(candidate, { timeoutMs });
   return Boolean(result?.ok);
+}
+
+/** Short probe: one live playlist per provider proves the relay can pull it. */
+async function probeCameraStream(source, { timeoutMs = 8000 } = {}) {
+  const body = await fetchHlsBytes(source.url, {
+    maxBytes: HLS_LIMITS.playlistBytes,
+    timeoutMs,
+  });
+  return body.subarray(0, 7).toString('latin1') === '#EXTM3U';
 }
 
 /** Provider probing is on by default; tests and CCTV_PROBE_PROVIDERS=0 skip it. */
@@ -168,6 +183,11 @@ const LIVE_PACKS = [
     enabled: () => envEnabled('CCTV_NYCDOT_ENABLED'),
     load: () => loadNy511Sources('nycdot'),
   },
+  ...CARS_511_SITES.map((site) => ({
+    name: site.pack,
+    enabled: () => envEnabled(`CCTV_${site.env}_ENABLED`),
+    load: () => loadCars511Sources(site),
+  })),
   {
     name: 'iceland',
     enabled: () => envEnabled('CCTV_ICELAND_ENABLED'),
@@ -257,6 +277,8 @@ export function createCctvCatalog({ sourceRoot = process.cwd() } = {}) {
   let _cctvSourceInflight = null;
   /** Provider reachability verdicts, refreshed every PROVIDER_PROBE_TTL_MS. */
   const _providerReach = new Map();
+  /** Same, for live HLS playlists (see downgradeUnreachableStreams). */
+  const _streamReach = new Map();
 
   /**
    * Assemble and cache the merged CCTV source list.
@@ -358,11 +380,20 @@ export function createCctvCatalog({ sourceRoot = process.cwd() } = {}) {
     // (region-locked publishers, dead snapshot services, stock no-feed cards).
     const capped = probingEnabled()
       ? (
-          await filterReachableProviders(joined, {
-            probe: probeCameraFrame,
-            cache: _providerReach,
-            log: (message) => console.warn(message),
-          })
+          await downgradeUnreachableStreams(
+            (
+              await filterReachableProviders(joined, {
+                probe: probeCameraFrame,
+                cache: _providerReach,
+                log: (message) => console.warn(message),
+              })
+            ).sources,
+            {
+              probe: probeCameraStream,
+              cache: _streamReach,
+              log: (message) => console.warn(message),
+            },
+          )
         ).sources
       : joined;
     const trimmed = allocation.packs.filter((pack) => pack.kept < pack.offered);

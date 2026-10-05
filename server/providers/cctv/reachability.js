@@ -42,6 +42,57 @@ export const PROBE_RETRY_TIMEOUT_MS = 20000;
 const PROBES_PER_PROVIDER = 3;
 const PROBE_CONCURRENCY = 12;
 
+/**
+ * Live HLS cameras whose provider's streams do not answer from this server
+ * (US-only streaming hosts, WAF blocks) fall back to their still frame, so
+ * the catalog does not advertise video the relay cannot pull. Providers are
+ * probed on a few playlists, retried once on others, and cached like frames.
+ * @param {Array<object>} sources Catalog sources (after provider filtering).
+ * @param {object} options
+ * @param {(source: object, opts: {timeoutMs: number}) => Promise<boolean>} options.probe
+ *   Resolves true when the camera's playlist answered within `timeoutMs`.
+ * @param {Map<string, {ok: boolean, at: number}>} [options.cache]
+ * @param {number} [options.now]
+ * @param {(message: string) => void} [options.log]
+ * @returns {Promise<{sources: Array<object>, downgraded: string[]}>}
+ */
+export async function downgradeUnreachableStreams(
+  sources,
+  { probe, cache = new Map(), now = Date.now(), log = () => {} },
+) {
+  const live = sources.filter(
+    (source) => source?.feedType === 'hls' && source.snapshotUrl,
+  );
+  if (!live.length) return { sources, downgraded: [] };
+  const verdicts = new Map();
+  const { dropped } = await filterReachableProviders(live, {
+    probe,
+    cache,
+    now,
+    log: () => {},
+  });
+  for (const key of dropped) verdicts.set(key, false);
+  if (dropped.length)
+    log(
+      `[CCTV] live streams unreachable from this server, showing stills: ${dropped.join(', ')}`,
+    );
+  return {
+    sources: sources.map((source) =>
+      source?.feedType === 'hls' &&
+      source.snapshotUrl &&
+      verdicts.get(providerKey(source)) === false
+        ? {
+            ...source,
+            feedType: 'image',
+            url: source.snapshotUrl,
+            live: false,
+          }
+        : source,
+    ),
+    downgraded: dropped,
+  };
+}
+
 /** Provider key used to group cameras for probing. */
 export function providerKey(source) {
   return String(source?.provider || source?.sourceKind || 'unknown');

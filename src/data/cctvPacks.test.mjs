@@ -8,6 +8,8 @@ import {
   icelandCaptionHeading,
   icelandCameraToSource,
   qldWebcamToSource,
+  carsFeatureToSources,
+  carsGraphqlCameraToSources,
   ny511FeatureToSource,
   parseHongKongCameras,
   parseMadridCameras,
@@ -26,6 +28,7 @@ import { caltransStreamUrl } from '../../server/providers/cctv/sources.js';
 import { resolveCatalogCap } from '../../server/providers/cctv/cap.js';
 import {
   IBI_511_SITES,
+  CARS_511_SITES,
   SPAIN_CITY_SITES,
   CCTV_MAX_SOURCES_CEILING,
   DEFAULT_CCTV_MAX_SOURCES,
@@ -802,4 +805,131 @@ test('511NY: NYSDOT views go live on skyvdn, NYC DOT stays frames on nyctmc', ()
   assert.equal(variant({ videoPreviewUrl: 'https://example.com/p.png' }), null);
   assert.equal(variant({ broken: true }), null);
   assert.equal(variant({}, { public: false }), null);
+});
+
+const carsSite = (pack) => CARS_511_SITES.find((entry) => entry.pack === pack);
+
+test('CARS map features: each live view is a camera on pinned hosts', () => {
+  // Trimmed from https://api-511x-co.carsprogram.org/cameras/map-features (2026-10-05).
+  const feature = {
+    geometry: { coordinates: [-105.704145, 39.703969] },
+    properties: {
+      id: 14336,
+      name: 'I-70 MP 227.00 EB : 0.9 miles W of 15th St in Georgetown',
+      public: true,
+      route: 'I-70',
+      location: { cityReference: 'near Georgetown' },
+      views: [
+        {
+          name: 'I-70 MP 227.00 EB : 0.9 miles W of 15th St in Georgetown',
+          type: 'WMP',
+          url: 'https://publicstreamer4.cotrip.org:443/rtplive/070E22700CAM1RHS/playlist.m3u8',
+          videoPreviewUrl:
+            'https://cocam.carsprogram.org/Snapshots/070E22700CAM1RHS.flv.png',
+          broken: false,
+        },
+        {
+          name: 'I-70 MP 227.00 WB',
+          type: 'WMP',
+          url: 'https://publicstreamer4.cotrip.org/rtplive/070W22700CAM1RHS/playlist.m3u8',
+          videoPreviewUrl:
+            'https://cocam.carsprogram.org/Snapshots/070W22700CAM1RHS.flv.png',
+          broken: false,
+        },
+        {
+          name: 'Still',
+          type: 'STILL_IMAGE',
+          url: 'https://cocam.carsprogram.org/Snapshots/still.jpg',
+        },
+      ],
+    },
+  };
+  const [east, west, ...rest] = carsFeatureToSources(
+    feature,
+    carsSite('co511'),
+  );
+  assert.equal(rest.length, 0);
+  assert.equal(east.id, 'co511-14336');
+  assert.equal(west.id, 'co511-14336-1');
+  assert.equal(
+    east.url,
+    'https://publicstreamer4.cotrip.org/rtplive/070E22700CAM1RHS/playlist.m3u8',
+  );
+  assert.equal(east.city, 'Georgetown');
+  assert.equal(east.headingDeg, 90);
+  assert.equal(west.headingDeg, 270);
+  assert.equal(east.feedType, 'hls');
+  const foreign = {
+    ...feature,
+    properties: {
+      ...feature.properties,
+      views: [
+        {
+          ...feature.properties.views[0],
+          url: 'https://evil.example/x/playlist.m3u8',
+        },
+        {
+          ...feature.properties.views[1],
+          videoPreviewUrl: 'https://evil.example/p.png',
+        },
+      ],
+    },
+  };
+  assert.deepEqual(carsFeatureToSources(foreign, carsSite('co511')), []);
+  assert.deepEqual(
+    carsFeatureToSources(
+      { ...feature, geometry: { coordinates: [-93.28, 44.77] } },
+      carsSite('co511'),
+    ),
+    [],
+  );
+});
+
+test('CARS GraphQL cameras: video sources only, device code dropped', () => {
+  // Trimmed from https://511in.org/api/graphql mapFeaturesQuery (2026-10-05).
+  const feature = {
+    tooltip: 'US 31: 2-031-130-6-_-_-cam-1 US-31/130.7 161ST ST',
+    uri: 'camera/24585',
+    active: true,
+    features: [
+      { geometry: { type: 'Point', coordinates: [-86.1315, 40.02167] } },
+    ],
+    views: [
+      {
+        category: 'VIDEO',
+        url: 'https://public.carsprogram.org/cameras/IN/INDOT_261_B6pE8gVw3RJ7YdXn.flv.png',
+        sources: [
+          {
+            type: 'application/x-mpegURL',
+            src: 'https://skysfs3.trafficwise.org/preroll/INDOT_261_B6pE8gVw3RJ7YdXn/playlist.m3u8',
+          },
+        ],
+      },
+      {
+        category: 'IMAGE',
+        url: 'https://public.carsprogram.org/cameras/IN/x.jpg',
+      },
+    ],
+  };
+  const cameras = carsGraphqlCameraToSources(feature, carsSite('in511'));
+  assert.equal(cameras.length, 1);
+  assert.equal(cameras[0].id, 'in511-24585');
+  assert.equal(cameras[0].name, 'US 31: US-31/130.7 161ST ST');
+  assert.equal(cameras[0].city, 'US 31');
+  assert.deepEqual(
+    carsGraphqlCameraToSources(
+      { ...feature, active: false },
+      carsSite('in511'),
+    ),
+    [],
+  );
+});
+
+test('CARS sites are unique packs with https feeds', () => {
+  const packs = CARS_511_SITES.map((entry) => entry.pack);
+  assert.equal(new Set(packs).size, packs.length);
+  for (const entry of CARS_511_SITES) {
+    assert.match(entry.url, /^https:\/\//);
+    assert.ok(['geojson', 'graphql'].includes(entry.feed));
+  }
 });

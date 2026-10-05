@@ -13,7 +13,7 @@ export const DEFAULT_AUSTIN_MAX_SOURCES = 250;
  * sites) are thinned to an equal share; every other pack, the Spanish ones
  * included, loads whole.
  */
-export const DEFAULT_CCTV_MAX_SOURCES = 26500;
+export const DEFAULT_CCTV_MAX_SOURCES = 28500;
 /** Hard upper bound for CCTV_MAX_SOURCES; also sizes the health map. Billboards
  * share one collection and coverage geometry is built only for the visible
  * set, so the client stays responsive at this size. */
@@ -623,6 +623,95 @@ export const NZTA_ANCHORS = [
   { lat: -41.2865, lon: 174.7762 }, // Wellington
   { lat: -43.5321, lon: 172.6362 }, // Christchurch
 ];
+
+/**
+ * Other 511 sites on the CARS platform with open live video. `feed: 'geojson'`
+ * sites publish the keyless `/cameras/map-features` list their map loads;
+ * `feed: 'graphql'` sites (the older CARS front end) answer the map's
+ * `mapFeaturesQuery` at `/api/graphql`. Only live views are kept, each view a
+ * camera; stream and still hosts are pinned per site. Sites whose streams
+ * carry an expiring token (Kansas, Massachusetts) are not listed.
+ */
+export const CARS_511_SITES = Object.freeze([
+  Object.freeze({
+    pack: 'co511',
+    env: 'CO511',
+    feed: 'geojson',
+    url: 'https://api-511x-co.carsprogram.org/cameras/map-features',
+    provider: 'COtrip (CDOT)',
+    region: 'Colorado',
+    streamHosts: /^publicstreamer\d{1,2}\.cotrip\.org$/,
+    imageHosts: /^cocam\.carsprogram\.org$/,
+    bounds: Object.freeze({
+      south: 36.9,
+      west: -109.1,
+      north: 41.1,
+      east: -102,
+    }),
+    defaultMax: 900,
+    anchors: [
+      { lat: 39.7392, lon: -104.9903 }, // Denver
+      { lat: 38.8339, lon: -104.8214 }, // Colorado Springs
+      { lat: 39.6403, lon: -106.3742 }, // Vail
+      { lat: 40.5853, lon: -105.0844 }, // Fort Collins
+    ],
+    elevationM: 1700,
+  }),
+  Object.freeze({
+    pack: 'mn511',
+    env: 'MN511',
+    feed: 'geojson',
+    url: 'https://api-511x-mn.carsprogram.org/cameras/map-features',
+    provider: '511MN (MnDOT)',
+    region: 'Minnesota',
+    streamHosts: /^video\.dot\.state\.mn\.us$/,
+    imageHosts: /^public\.carsprogram\.org$/,
+    bounds: Object.freeze({
+      south: 43.4,
+      west: -97.3,
+      north: 49.4,
+      east: -89.4,
+    }),
+    defaultMax: 1300,
+    anchors: [
+      { lat: 44.9778, lon: -93.265 }, // Minneapolis
+      { lat: 44.9537, lon: -93.09 }, // Saint Paul
+      { lat: 46.7867, lon: -92.1005 }, // Duluth
+      { lat: 44.0121, lon: -92.4802 }, // Rochester, MN
+    ],
+    elevationM: 260,
+  }),
+  Object.freeze({
+    pack: 'in511',
+    env: 'IN511',
+    feed: 'graphql',
+    url: 'https://511in.org/api/graphql',
+    provider: 'TrafficWise (INDOT)',
+    region: 'Indiana',
+    streamHosts: /^skysfs\d{1,2}\.trafficwise\.org$/,
+    imageHosts: /^public\.carsprogram\.org$/,
+    bounds: Object.freeze({
+      south: 37.7,
+      west: -88.2,
+      north: 41.8,
+      east: -84.7,
+    }),
+    defaultMax: 300,
+    anchors: [
+      { lat: 39.7684, lon: -86.1581 }, // Indianapolis
+      { lat: 41.0793, lon: -85.1394 }, // Fort Wayne
+      { lat: 41.5934, lon: -87.3464 }, // Gary
+    ],
+    elevationM: 230,
+  }),
+]);
+/** Map bounding box the GraphQL sites are asked for (the continental US). */
+export const CARS_GRAPHQL_BOX = Object.freeze({
+  north: 50,
+  south: 24,
+  east: -66,
+  west: -125,
+});
 
 /** 511NY (New York State DOT, on the CARS platform since 2026): the keyless
  * GeoJSON the 511ny.org map loads. NYSDOT cameras carry an open HLS stream on

@@ -3,7 +3,8 @@
  * IBI platform (Georgia, Florida, Pennsylvania, Arizona, Nevada, Louisiana,
  * Idaho, Alaska, New England, North Carolina, Connecticut and eight Canadian
  * provinces and territories), Iowa DOT, Hong Kong Transport Department,
- * Waka Kotahi NZTA, 511NY (NYSDOT live video, NYC DOT), Vegagerðin (Iceland), QLDTraffic (Queensland), the City of
+ * Waka Kotahi NZTA, 511NY (NYSDOT live video, NYC DOT), the CARS 511 sites
+ * with open live video (Colorado, Minnesota, Indiana), Vegagerðin (Iceland), QLDTraffic (Queensland), the City of
  * Madrid (Informo) and Spain's road cameras:
  * DGT nationwide, the Servei Català de Trànsit (with Barcelona and Terrassa),
  * Open Data Euskadi, and the city and regional feeds in SPAIN_CITY_SITES
@@ -31,6 +32,8 @@ import {
   NZTA_IMAGE_ORIGIN,
   DEFAULT_NZTA_MAX_SOURCES,
   NZTA_ANCHORS,
+  CARS_511_SITES,
+  CARS_GRAPHQL_BOX,
   NY511_CAMERAS_URL,
   NY511_STREAM_HOST_PATTERN,
   NY511_PREVIEW_ORIGIN,
@@ -614,6 +617,199 @@ export async function loadNy511Sources(owner = 'nysdot') {
     return prioritized;
   } catch (error) {
     console.warn(`[CCTV] ${label} download error:`, error?.message || error);
+    return [];
+  }
+}
+
+/** True for an https URL on one of the site's pinned still hosts. */
+function carsImageOk(raw, site) {
+  try {
+    const url = new URL(String(raw || ''));
+    return url.protocol === 'https:' && site.imageHosts.test(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * One live view of a CARS camera → source, or null. `index` > 0 suffixes the
+ * id so every view of a multi-view site is its own camera.
+ * @param {{site: object, siteId: number, index: number, lat: number,
+ *   lon: number, name: string, city: string, stream: string,
+ *   preview: string}} view
+ */
+function carsLiveSource({
+  site,
+  siteId,
+  index,
+  lat,
+  lon,
+  name,
+  city,
+  stream,
+  preview,
+}) {
+  const hls = safeHlsUrl(stream, (url) => site.streamHosts.test(url.hostname));
+  if (!hls || !carsImageOk(preview, site)) return null;
+  const cameraId = index
+    ? `${site.pack}-${siteId}-${index}`
+    : `${site.pack}-${siteId}`;
+  const label = String(name || '').trim() || `${site.region} camera ${siteId}`;
+  return {
+    id: cameraId,
+    name: label,
+    city: String(city || '').replace(/^(?:in|near)\s+/i, '') || site.region,
+    cityId: site.pack,
+    provider: site.provider,
+    lat,
+    lon,
+    ...posePrior(cameraId, directionToHeading(label)),
+    groundElevationM: site.elevationM,
+    feedType: 'hls',
+    url: hls,
+    snapshotUrl: preview,
+    live: true,
+    sourceKind: 'cars-511',
+    license: `Public ${site.provider} traveler-information camera`,
+  };
+}
+
+/**
+ * CARS `/cameras/map-features` feature → its live views as sources.
+ * @param {object} feature
+ * @param {object} site - CARS_511_SITES entry.
+ */
+export function carsFeatureToSources(feature, site) {
+  const p = feature?.properties || {};
+  const siteId = Number(p.id);
+  if (p.public === false || !Number.isInteger(siteId) || siteId <= 0) return [];
+  const [lon, lat] = Array.isArray(feature?.geometry?.coordinates)
+    ? feature.geometry.coordinates.map(Number)
+    : [];
+  if (!isPlausibleLatLon(lat, lon) || !inBounds(lat, lon, site.bounds))
+    return [];
+  const views = Array.isArray(p.views) ? p.views : [];
+  return views
+    .map((view, index) =>
+      view && !view.broken && view.type === 'WMP'
+        ? carsLiveSource({
+            site,
+            siteId,
+            index,
+            lat,
+            lon,
+            name: view.name || p.name,
+            city: p.location?.cityReference || p.route,
+            stream: view.url,
+            preview: view.videoPreviewUrl,
+          })
+        : null,
+    )
+    .filter(Boolean);
+}
+
+/** The map query the older CARS front end sends, reduced to cameras. */
+const CARS_GRAPHQL_QUERY =
+  'query MapFeatures($input: MapFeaturesArgs!) { mapFeaturesQuery(input: $input) { mapFeatures { tooltip uri features { geometry } ... on Camera { active views(limit: 8) { category ... on CameraView { url sources { type src } } } } } } }';
+
+/**
+ * CARS GraphQL camera map feature → its live views as sources.
+ * @param {object} feature - one `mapFeatures` entry.
+ * @param {object} site - CARS_511_SITES entry.
+ */
+export function carsGraphqlCameraToSources(feature, site) {
+  const siteId = Number(/^camera\/(\d+)$/.exec(String(feature?.uri))?.[1]);
+  if (feature?.active === false || !Number.isInteger(siteId) || siteId <= 0)
+    return [];
+  const point = feature?.features?.[0]?.geometry;
+  const [lon, lat] =
+    point?.type === 'Point' && Array.isArray(point.coordinates)
+      ? point.coordinates.map(Number)
+      : [];
+  if (!isPlausibleLatLon(lat, lon) || !inBounds(lat, lon, site.bounds))
+    return [];
+  const tooltip = String(feature.tooltip || '');
+  const views = Array.isArray(feature.views) ? feature.views : [];
+  return views
+    .map((view, index) => {
+      if (view?.category !== 'VIDEO') return null;
+      const source = (Array.isArray(view.sources) ? view.sources : []).find(
+        (candidate) => /mpegurl/i.test(String(candidate?.type || '')),
+      );
+      return carsLiveSource({
+        site,
+        siteId,
+        index,
+        lat,
+        lon,
+        // "US 31: 2-031-130-6-_-_-cam-1 US-31/130.7 161ST ST" loses the
+        // device code: "US 31: US-31/130.7 161ST ST".
+        name: tooltip.replace(/:\s*\d-[\w-]+\s+/, ': '),
+        city: tooltip.split(':')[0],
+        stream: source?.src,
+        preview: view.url,
+      });
+    })
+    .filter(Boolean);
+}
+
+async function fetchCarsGraphqlCameras(site) {
+  const response = await fetch(site.url, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'User-Agent': PANOPTES_CCTV_USER_AGENT,
+    },
+    body: JSON.stringify({
+      query: CARS_GRAPHQL_QUERY,
+      variables: {
+        input: {
+          ...CARS_GRAPHQL_BOX,
+          zoom: 9,
+          layerSlugs: ['normalCameras'],
+          nonClusterableUris: ['dashboard'],
+        },
+      },
+    }),
+    signal: AbortSignal.timeout(CCTV_SOURCE_FETCH_TIMEOUT_MS),
+  });
+  if (!response.ok) {
+    await response.body?.cancel().catch(() => {});
+    throw new Error(`HTTP ${response.status}`);
+  }
+  const payload = await readResponseJsonCapped(response, 8 * MB);
+  const features = payload?.data?.mapFeaturesQuery?.mapFeatures;
+  if (!Array.isArray(features)) throw new Error('unexpected GraphQL answer');
+  return features.flatMap((feature) =>
+    carsGraphqlCameraToSources(feature, site),
+  );
+}
+
+/** @param {object} site - CARS_511_SITES entry. */
+export async function loadCars511Sources(site) {
+  try {
+    const cameras =
+      site.feed === 'graphql'
+        ? await fetchCarsGraphqlCameras(site)
+        : (await fetchJson(site.url, 8 * MB))?.features?.flatMap?.((feature) =>
+            carsFeatureToSources(feature, site),
+          ) || [];
+    const unique = [...new Map(cameras.map((c) => [c.id, c])).values()];
+    const prioritized = prioritizeSources(
+      unique,
+      packCap(site.env, site.defaultMax, 5000),
+      site.anchors,
+    );
+    console.log(
+      `[CCTV] Loaded ${site.provider}: ${unique.length} live cameras (using ${prioritized.length})`,
+    );
+    return prioritized;
+  } catch (error) {
+    console.warn(
+      `[CCTV] ${site.provider} download error:`,
+      error?.message || error,
+    );
     return [];
   }
 }

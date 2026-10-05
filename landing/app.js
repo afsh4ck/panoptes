@@ -34,6 +34,7 @@
     'hero.cta1': 'View on GitHub',
     'hero.cta2': 'Install in 2 minutes',
     'hero.eyes': '100 eyes, none asleep',
+    'film.label': 'The film · 0:57 · 4K with sound',
     'stat.cams': 'public cameras',
     'stat.bases': 'military bases',
     'stat.flights': 'live flights',
@@ -296,6 +297,8 @@
     Copiar: 'Copy',
     Licencia: 'License',
     Cerrar: 'Close',
+    'Ver la película de PANOPTES con sonido': 'Watch the PANOPTES film with sound',
+    'Película de PANOPTES': 'PANOPTES film',
   };
   var textNodes = [];
   (function collect() {
@@ -612,6 +615,49 @@
   addEventListener('keydown', function (e) {
     if (e.key === 'Escape') closeBox();
   });
+
+  /* ── Film: poster below the hero, plays with sound in a popup ── */
+  var film = document.querySelector('.film-modal');
+  var filmTrigger = document.querySelector('[data-film]');
+  if (film && filmTrigger) {
+    var filmVideo = film.querySelector('video');
+    var filmClose = film.querySelector('.film-close');
+    /* Phones held upright get the 9:16 cut of the film. */
+    var portraitQuery = window.matchMedia(
+      '(max-width: 768px) and (orientation: portrait)',
+    );
+    var openFilm = function () {
+      var cut = portraitQuery.matches ? 'portrait' : 'landscape';
+      if (filmVideo.dataset.cut !== cut) {
+        filmVideo.dataset.cut = cut;
+        filmVideo.poster = filmVideo.dataset[cut + 'Poster'];
+        filmVideo.src = filmVideo.dataset[cut];
+      }
+      film.classList.toggle('portrait', cut === 'portrait');
+      film.hidden = false;
+      document.documentElement.classList.add('film-open');
+      filmVideo.muted = false;
+      filmVideo.currentTime = 0;
+      var playing = filmVideo.play();
+      if (playing && playing.catch) playing.catch(function () {});
+      filmClose.focus();
+    };
+    var closeFilm = function () {
+      if (film.hidden) return;
+      filmVideo.pause();
+      film.hidden = true;
+      document.documentElement.classList.remove('film-open');
+      filmTrigger.focus();
+    };
+    filmTrigger.addEventListener('click', openFilm);
+    filmClose.addEventListener('click', closeFilm);
+    film.addEventListener('click', function (e) {
+      if (e.target === film) closeFilm();
+    });
+    addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeFilm();
+    });
+  }
 
   /* ── Copy buttons ────────────────────────────────────────────── */
   document.querySelectorAll('.copy').forEach(function (b) {

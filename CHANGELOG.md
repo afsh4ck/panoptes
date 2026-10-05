@@ -1,5 +1,13 @@
 # Changelog
 
+- Cameras: about 2,230 more live cameras from Colorado (COtrip), Minnesota
+  (511MN) and Indiana (TrafficWise). Providers whose live streams do not
+  answer from the server now show their stills instead of advertising
+  video that cannot play (FL511 and 511PA streams answer 401, DriveNC,
+  COtrip and TrafficWise stream only inside the US). Default catalog cap
+  28,500.
+- Landing: the PANOPTES film below the hero; it opens in a popup with
+  sound, in 4K, and in its vertical cut on phones.
 - Cameras: New York through 511NY. About 1,750 NYSDOT cameras play live
   video through the server relay and about 970 NYC DOT cameras show stills
   (hidden automatically where nyctmc.org does not answer). The default
